@@ -1,0 +1,78 @@
+{% extends "courses/base.html" %}
+{% block title %}Topics{% endblock %}
+{% block content %}
+  <div class="page-header">
+    <div>
+      <h1>Learning Topics</h1>
+      <p class="muted">Create a topic, refine it into a 30-day course, then let the daily lesson workflow carry it forward.</p>
+    </div>
+    <a class="button primary" href="{% url 'courses:topic_create' %}">New Topic</a>
+  </div>
+  <div class="dashboard-grid">
+    <section class="panel">
+      <div class="section-title">
+        <h2>Topics</h2>
+        <span class="count-pill">{{ topics|length }}</span>
+      </div>
+      {% if topics %}
+        <div class="item-list">
+          {% for topic in topics %}
+            <a class="list-card" href="{% url 'courses:topic_detail' topic.id %}">
+              <span class="list-card-title">
+                <span>{{ topic.title }}</span>
+                <span class="count-pill">{{ topic.courses.count }}</span>
+              </span>
+              {% if topic.description %}
+                <p>{{ topic.description|truncatechars:140 }}</p>
+              {% else %}
+                <p>No description yet.</p>
+              {% endif %}
+              <span class="meta-row">
+                <span class="meta-pill">{{ topic.courses.count }} course{{ topic.courses.count|pluralize }}</span>
+                <span class="meta-pill">Updated {{ topic.updated_at|date:"M j" }}</span>
+              </span>
+            </a>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state">
+          <p class="muted">No topics yet.</p>
+          <a class="button primary" href="{% url 'courses:topic_create' %}">Create First Topic</a>
+        </div>
+      {% endif %}
+    </section>
+
+    <section class="panel">
+      <div class="section-title">
+        <h2>Active Courses</h2>
+        <span class="count-pill">{{ active_courses|length }}</span>
+      </div>
+      {% if active_courses %}
+        <div class="item-list">
+          {% for course in active_courses %}
+            <a class="list-card" href="{% url 'courses:course_detail' course.id %}">
+              <span class="list-card-title">{{ course.title }}</span>
+              <p>{{ course.topic.title }}</p>
+              <span class="meta-row">
+                {% with lesson_count=course.lessons.count %}
+                  {% if lesson_count == 0 %}
+                    <span class="meta-pill">No lessons sent yet</span>
+                  {% elif lesson_count == 1 %}
+                    <span class="meta-pill">1 lesson sent</span>
+                  {% else %}
+                    <span class="meta-pill">{{ lesson_count }} lessons sent</span>
+                  {% endif %}
+                {% endwith %}
+                <span class="meta-pill">{{ course.daily_time_commitment }}</span>
+              </span>
+            </a>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state">
+          <p class="muted">No active courses.</p>
+        </div>
+      {% endif %}
+    </section>
+  </div>
+{% endblock %}

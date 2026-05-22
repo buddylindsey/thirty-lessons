@@ -1,0 +1,45 @@
+{% extends "courses/base.html" %}
+{% block content %}
+  <div class="page-header">
+    <div>
+      <h1>New Topic</h1>
+      <p class="muted">Start with the broad subject you want to turn into one or more 30-day courses.</p>
+    </div>
+  </div>
+  <div class="form-layout">
+    <form class="form-card" method="post">
+      {% csrf_token %}
+      {% if form.non_field_errors %}{{ form.non_field_errors }}{% endif %}
+      <div class="form-grid">
+        <div class="form-field full">
+          {{ form.title.errors }}
+          {{ form.title.label_tag }}
+          {{ form.title }}
+        </div>
+        <div class="form-field full">
+          {{ form.description.errors }}
+          {{ form.description.label_tag }}
+          {{ form.description }}
+        </div>
+      </div>
+      <div class="submit-row">
+        <button class="primary" type="submit">Save Topic</button>
+        <a class="button" href="{% url 'courses:topic_list' %}">Cancel</a>
+      </div>
+    </form>
+    <aside class="help-panel">
+      <h2>Topic Tips</h2>
+      <p class="muted">A topic is the container. Courses under it can target different goals, skill levels, or lesson styles.</p>
+      <dl class="settings-list">
+        <div>
+          <dt>Good topic</dt>
+          <dd>Rust systems programming, piano history, electrical theory.</dd>
+        </div>
+        <div>
+          <dt>Next step</dt>
+          <dd>Create a course with a specific goal and daily time commitment.</dd>
+        </div>
+      </dl>
+    </aside>
+  </div>
+{% endblock %}

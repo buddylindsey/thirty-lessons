@@ -1,0 +1,6 @@
+Django>=5.0,<5.3
+dj-database-url>=2.2,<3
+markdown>=3.6,<4
+bleach>=6.1,<7
+gunicorn>=22,<24
+openai>=2.0,<3

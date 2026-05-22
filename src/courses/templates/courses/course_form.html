@@ -1,0 +1,68 @@
+{% extends "courses/base.html" %}
+{% block content %}
+  <div class="page-header">
+    <div>
+      <h1>Create Course</h1>
+      <p class="muted">Set the starting direction for a 30-day program on <a href="{% url 'courses:topic_detail' topic.id %}">{{ topic.title }}</a>.</p>
+    </div>
+  </div>
+  <div class="form-layout">
+    <form class="form-card" method="post" onsubmit="this.classList.add('submitting'); this.querySelector('button[type=submit]').disabled = true;">
+      {% csrf_token %}
+      {% if form.non_field_errors %}{{ form.non_field_errors }}{% endif %}
+      <div class="form-grid">
+        <div class="form-field full">
+          {{ form.title.errors }}
+          {{ form.title.label_tag }}
+          {{ form.title }}
+        </div>
+        <div class="form-field full">
+          {{ form.goal.errors }}
+          {{ form.goal.label_tag }}
+          {{ form.goal }}
+        </div>
+        <div class="form-field">
+          {{ form.audience_level.errors }}
+          {{ form.audience_level.label_tag }}
+          {{ form.audience_level }}
+        </div>
+        <div class="form-field">
+          {{ form.daily_time_commitment.errors }}
+          {{ form.daily_time_commitment.label_tag }}
+          {{ form.daily_time_commitment }}
+        </div>
+        <div class="form-field full">
+          {{ form.lesson_style.errors }}
+          {{ form.lesson_style.label_tag }}
+          {{ form.lesson_style }}
+        </div>
+      </div>
+      <div class="submit-row">
+        <button class="primary" type="submit">Create Course</button>
+        <a class="button" href="{% url 'courses:topic_detail' topic.id %}">Cancel</a>
+        <div class="loading" role="status" aria-live="polite">
+          <span class="spinner" aria-hidden="true"></span>
+          <span>Creating the course and asking the assistant to start the refinement chat...</span>
+        </div>
+      </div>
+    </form>
+    <aside class="help-panel">
+      <h2>What Happens Next</h2>
+      <p class="muted">After creation, the assistant starts a refinement chat so you can tune the outline before activating the course.</p>
+      <dl class="settings-list">
+        <div>
+          <dt>Current topic</dt>
+          <dd>{{ topic.title }}</dd>
+        </div>
+        <div>
+          <dt>First step</dt>
+          <dd>Clarify what the course should include, skip, and emphasize.</dd>
+        </div>
+        <div>
+          <dt>Then</dt>
+          <dd>Generate a 30-day outline and activate the course when it looks right.</dd>
+        </div>
+      </dl>
+    </aside>
+  </div>
+{% endblock %}

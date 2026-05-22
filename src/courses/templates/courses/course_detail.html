@@ -1,0 +1,91 @@
+{% extends "courses/base.html" %}
+{% block content %}
+  <div class="page-header">
+    <div>
+      <h1>{{ course.title }}</h1>
+      <p><a href="{% url 'courses:topic_detail' course.topic.id %}">{{ course.topic.title }}</a></p>
+    </div>
+  </div>
+  {% include "courses/partials/status_panel.html" %}
+  <div class="workflow-steps" aria-label="Course setup progress">
+    <a class="workflow-step {% if course.chat_messages.all %}done{% else %}current{% endif %}" href="#chat-panel">
+      <strong>1. Refine</strong>
+      <span>Clarify the direction with the assistant.</span>
+    </a>
+    <a class="workflow-step {% if course.outline %}done{% elif course.chat_messages.all %}current{% endif %}" href="#outline-panel">
+      <strong>2. Outline</strong>
+      <span>Generate the 30-day plan.</span>
+    </a>
+    <a class="workflow-step {% if course.status == 'active' %}current{% elif course.status == 'completed' %}done{% endif %}" href="#lessons-panel">
+      <strong>3. Deliver</strong>
+      <span>Activate the course and send daily lessons.</span>
+    </a>
+  </div>
+
+  <div class="course-layout">
+    <div>
+      {% include "courses/partials/chat_panel.html" %}
+      {% include "courses/partials/outline_panel.html" %}
+      <section id="lessons-panel" class="panel">
+        <div class="panel-heading">
+          <div>
+            <span class="step-kicker">Step 3</span>
+            <h2>Lessons</h2>
+            <p class="muted">Generated lessons appear here after the daily job runs.</p>
+          </div>
+        </div>
+        {% if course.lessons.all %}
+          <div class="item-list">
+            {% for lesson in course.lessons.all %}
+              <a class="list-card" href="{% url 'courses:lesson_detail' lesson.id %}">
+                <span class="list-card-title">Day {{ lesson.day_number }}: {{ lesson.title }}</span>
+                <p>{{ lesson.summary|truncatechars:140 }}</p>
+                <span class="meta-row">
+                  {% if lesson.email_sent_at %}
+                    <span class="meta-pill">Sent {{ lesson.email_sent_at|date:"M j" }}</span>
+                  {% else %}
+                    <span class="meta-pill">Email not sent</span>
+                  {% endif %}
+                </span>
+              </a>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="empty-state">
+            <p class="muted">No lessons generated yet.</p>
+          </div>
+        {% endif %}
+      </section>
+    </div>
+
+    <aside class="panel course-sidebar">
+      <h2>Course Settings</h2>
+      <dl class="settings-list">
+        <div>
+          <dt>AI provider</dt>
+          <dd>{{ ai_provider_name }}{% if ai_provider_name == "openai" %} ({% if openai_key_configured %}key configured{% else %}missing OPENAI_KEY{% endif %}){% endif %}</dd>
+        </div>
+        <div>
+          <dt>Goal</dt>
+          <dd>{{ course.goal }}</dd>
+        </div>
+        <div>
+          <dt>Level</dt>
+          <dd>{{ course.audience_level }}</dd>
+        </div>
+        <div>
+          <dt>Style</dt>
+          <dd>{{ course.lesson_style }}</dd>
+        </div>
+        <div>
+          <dt>Daily time</dt>
+          <dd>{{ course.daily_time_commitment }}</dd>
+        </div>
+      </dl>
+      {% if course.memory %}
+        <h2>Course Memory</h2>
+        <p>{{ course.memory.content }}</p>
+      {% endif %}
+    </aside>
+  </div>
+{% endblock %}

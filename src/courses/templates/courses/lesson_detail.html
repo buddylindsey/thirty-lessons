@@ -1,0 +1,19 @@
+{% extends "courses/base.html" %}
+{% block content %}
+  <div class="page-header">
+    <div>
+      <h1>Day {{ lesson.day_number }}: {{ lesson.title }}</h1>
+      <p><a href="{% url 'courses:course_detail' lesson.course.id %}">{{ lesson.course.title }}</a></p>
+      <div class="lesson-meta">
+        {% if lesson.email_sent_at %}
+          <span class="meta-pill">Sent {{ lesson.email_sent_at|date:"M j, Y" }}</span>
+        {% else %}
+          <span class="meta-pill">Email not sent</span>
+        {% endif %}
+        <span class="meta-pill">Generated {{ lesson.generated_at|date:"M j, Y" }}</span>
+      </div>
+    </div>
+  </div>
+  <article class="lesson-content">{{ content_html|safe }}</article>
+  {% include "courses/partials/feedback_panel.html" %}
+{% endblock %}

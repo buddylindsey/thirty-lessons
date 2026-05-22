@@ -1,0 +1,38 @@
+<section id="outline-panel" class="panel">
+  {% if messages %}
+    <ul class="messages">
+      {% for message in messages %}<li>{{ message }}</li>{% endfor %}
+    </ul>
+  {% endif %}
+  <div class="panel-heading">
+    <div>
+      <span class="step-kicker">Step 2</span>
+      <h2>30-Day Outline</h2>
+      <p class="muted">Generate or refresh the plan after the refinement chat has enough direction.</p>
+    </div>
+    <form class="embedded-form" method="post" action="{% url 'courses:outline_generate' course.id %}" hx-post="{% url 'courses:outline_generate' course.id %}" hx-target="#outline-panel" hx-swap="outerHTML" hx-indicator="#outline-loading" hx-disabled-elt="button">
+      {% csrf_token %}
+      <button class="primary" type="submit">Generate Outline</button>
+      <div id="outline-loading" class="loading" role="status" aria-live="polite">
+        <span class="spinner" aria-hidden="true"></span>
+        <span>Generating the 30-day outline...</span>
+      </div>
+    </form>
+  </div>
+  {% if course.outline %}
+    <ol class="outline-list">
+      {% for item in course.outline %}
+        <li data-testid="outline-item">
+          <span>
+            <strong>{{ item.title }}</strong>
+            <span>{{ item.objective }}</span>
+          </span>
+        </li>
+      {% endfor %}
+    </ol>
+  {% else %}
+    <div class="empty-state">
+      <p class="muted">No outline yet.</p>
+    </div>
+  {% endif %}
+</section>

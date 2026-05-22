@@ -1,0 +1,32 @@
+{% load markdown_tags %}
+<section id="chat-panel" class="panel">
+  <div class="panel-heading">
+    <div>
+      <span class="step-kicker">Step 1</span>
+      <h2>Refine Direction</h2>
+      <p class="muted">Use the conversation to sharpen what the 30-day course should include, skip, and emphasize.</p>
+    </div>
+  </div>
+  {% if messages %}
+    <ul class="messages">
+      {% for message in messages %}<li>{{ message }}</li>{% endfor %}
+    </ul>
+  {% endif %}
+  <div>
+    {% for message in course.chat_messages.all %}
+      <article class="message chat-{{ message.role }}" data-testid="chat-message">
+        <strong>{{ message.role|title }}</strong>
+        <div class="message-body">{{ message.content|markdown_html }}</div>
+      </article>
+    {% endfor %}
+  </div>
+  <form class="embedded-form" method="post" action="{% url 'courses:chat_submit' course.id %}" hx-post="{% url 'courses:chat_submit' course.id %}" hx-target="#chat-panel" hx-swap="outerHTML" hx-indicator="#chat-loading" hx-disabled-elt="button">
+    {% csrf_token %}
+    {{ chat_form.as_p }}
+    <button class="primary" type="submit">Send</button>
+    <div id="chat-loading" class="loading" role="status" aria-live="polite">
+      <span class="spinner" aria-hidden="true"></span>
+      <span>Waiting for the assistant response...</span>
+    </div>
+  </form>
+</section>

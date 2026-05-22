@@ -1,0 +1,41 @@
+<section id="feedback-panel" class="panel feedback-panel">
+  <div class="panel-heading">
+    <div>
+      <h2>Feedback</h2>
+      <p class="muted">Use quick signals or leave a note for future lessons.</p>
+    </div>
+  </div>
+  <div class="feedback-actions" aria-label="Quick feedback actions">
+    {% for value, label in feedback_choices %}
+      {% if value != "custom_comment" %}
+        <form class="feedback-action-form" method="post" action="{% url 'courses:quick_feedback' lesson.id value %}" hx-post="{% url 'courses:quick_feedback' lesson.id value %}" hx-target="#feedback-panel" hx-swap="outerHTML">
+          {% csrf_token %}
+          <button type="submit">{{ label }}</button>
+        </form>
+      {% endif %}
+    {% endfor %}
+  </div>
+  <form class="comment-form" method="post" action="{% url 'courses:comment_submit' lesson.id %}" hx-post="{% url 'courses:comment_submit' lesson.id %}" hx-target="#feedback-panel" hx-swap="outerHTML">
+    {% csrf_token %}
+    {{ comment_form.comment.errors }}
+    {{ comment_form.comment.label_tag }}
+    {{ comment_form.comment }}
+    <div class="submit-row">
+      <button class="primary" type="submit">Save Note</button>
+    </div>
+  </form>
+  {% if lesson.feedback.all %}
+    <ul class="feedback-list">
+      {% for item in lesson.feedback.all %}
+        <li class="feedback-item" data-testid="feedback-item">
+          <strong>{{ item.get_feedback_type_display }}</strong>
+          {% if item.comment %}<p>{{ item.comment }}</p>{% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <div class="empty-state">
+      <p class="muted">No feedback yet.</p>
+    </div>
+  {% endif %}
+</section>

@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}30-Day Learning{% endblock %}</title>
+  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+  <style>
+    :root { color-scheme: light; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    body { margin: 0; background: #f6f7f9; color: #20242a; }
+    header { background: #1f2937; color: white; padding: 16px 24px; }
+    header a { color: white; margin-right: 16px; text-decoration: none; }
+    main { max-width: 980px; margin: 0 auto; padding: 28px 20px 56px; }
+    a { color: #0f5f8f; }
+    .panel, form, .message { background: white; border: 1px solid #d7dce2; border-radius: 8px; padding: 16px; margin: 14px 0; }
+    .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    .page-header { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 14px; margin-bottom: 20px; }
+    .page-header h1 { margin: 0 0 4px; }
+    .page-header p { margin: 0; max-width: 620px; }
+    .dashboard-grid { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(280px, .85fr); gap: 18px; align-items: start; }
+    .course-layout { display: grid; grid-template-columns: minmax(0, 1fr) 290px; gap: 18px; align-items: start; }
+    .course-sidebar { position: sticky; top: 18px; }
+    .section-title { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin: 0 0 12px; }
+    .section-title h2 { margin: 0; font-size: 1.05rem; }
+    .count-pill { display: inline-flex; align-items: center; min-height: 22px; padding: 1px 8px; border-radius: 999px; background: #edf2f7; color: #596473; font-size: .82rem; font-weight: 650; }
+    .item-list { display: grid; gap: 10px; }
+    .list-card { display: block; border: 1px solid #d7dce2; border-radius: 8px; padding: 12px; color: inherit; text-decoration: none; background: #fff; }
+    .list-card:hover { border-color: #9fb3c8; box-shadow: 0 1px 5px rgba(31, 41, 55, .08); }
+    .list-card-title { display: flex; justify-content: space-between; align-items: start; gap: 10px; font-weight: 750; color: #172033; }
+    .list-card p { margin: 6px 0 0; color: #596473; }
+    .meta-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+    .meta-pill { display: inline-flex; align-items: center; min-height: 22px; padding: 1px 8px; border-radius: 999px; background: #f4f7fa; color: #495465; font-size: .82rem; }
+    .empty-state { border: 1px dashed #c3cad4; border-radius: 8px; padding: 18px; background: #fbfcfd; }
+    .workflow-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 14px 0; }
+    .workflow-step { display: block; border: 1px solid #d7dce2; border-radius: 8px; padding: 12px; background: #fff; color: inherit; text-decoration: none; }
+    .workflow-step:hover { border-color: #9fb3c8; box-shadow: 0 1px 5px rgba(31, 41, 55, .08); }
+    .workflow-step strong { display: block; margin-bottom: 4px; color: #172033; }
+    .workflow-step span { color: #596473; font-size: .9rem; }
+    .workflow-step.done { border-color: #b8dbc5; background: #f3fbf6; }
+    .workflow-step.current { border-color: #9fbde5; background: #f5f9ff; }
+    .panel-heading { display: flex; justify-content: space-between; align-items: start; gap: 12px; margin-bottom: 12px; }
+    .panel-heading h2 { margin: 0; }
+    .panel-heading p { margin: 4px 0 0; }
+    .step-kicker { color: #596473; font-size: .82rem; font-weight: 750; text-transform: uppercase; letter-spacing: .04em; }
+    .embedded-form { padding: 0; margin: 14px 0 0; border: 0; background: transparent; }
+    .outline-list { display: grid; gap: 8px; padding: 0; margin: 12px 0 0; list-style: none; counter-reset: outline; }
+    .outline-list li { counter-increment: outline; display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 10px; padding: 10px; border: 1px solid #e1e6ec; border-radius: 8px; background: #fbfcfd; }
+    .outline-list li::before { content: counter(outline); display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 999px; background: #edf2f7; color: #3f4a59; font-weight: 750; font-size: .86rem; }
+    .outline-list strong { display: block; margin-bottom: 3px; }
+    .settings-list { display: grid; gap: 10px; margin: 0; }
+    .settings-list div { border-top: 1px solid #edf0f3; padding-top: 10px; }
+    .settings-list div:first-child { border-top: 0; padding-top: 0; }
+    .settings-list dt { color: #596473; font-size: .82rem; font-weight: 750; }
+    .settings-list dd { margin: 2px 0 0; }
+    .form-layout { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 18px; align-items: start; }
+    .form-card { margin: 0; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .form-field.full { grid-column: 1 / -1; }
+    .form-field p { margin: 0; }
+    .help-panel { background: #fbfcfd; border: 1px solid #d7dce2; border-radius: 8px; padding: 16px; }
+    .submit-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 18px; padding-top: 16px; border-top: 1px solid #edf0f3; }
+    .lesson-layout { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 18px; align-items: start; }
+    .lesson-main { min-width: 0; }
+    .lesson-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+    .feedback-sidebar { position: sticky; top: 18px; }
+    .feedback-panel { margin-top: 18px; }
+    .feedback-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+    .feedback-action-form { padding: 0; margin: 0; border: 0; background: transparent; }
+    .feedback-actions button { justify-content: center; min-height: 34px; padding: 6px 10px; font-size: .9rem; }
+    .comment-form { padding: 14px; margin: 12px 0; background: #fbfcfd; }
+    .comment-form textarea { min-height: 92px; }
+    .feedback-list { display: grid; gap: 8px; padding: 0; margin: 12px 0 0; list-style: none; }
+    .feedback-item { border: 1px solid #e1e6ec; border-radius: 8px; padding: 10px; background: #fff; }
+    .feedback-item strong { display: block; color: #172033; }
+    .feedback-item p { margin: 4px 0 0; color: #596473; }
+    label { display: block; font-weight: 650; margin-top: 10px; }
+    input, textarea, select { box-sizing: border-box; width: 100%; max-width: 720px; padding: 10px; border: 1px solid #b9c1ca; border-radius: 6px; font: inherit; }
+    button, .button { display: inline-flex; align-items: center; min-height: 38px; padding: 8px 12px; border: 1px solid #768190; border-radius: 6px; background: #fff; color: #1f2937; text-decoration: none; font: inherit; cursor: pointer; }
+    button.primary, .button.primary { background: #146c94; border-color: #146c94; color: white; }
+    button.small { min-height: 30px; padding: 4px 9px; font-size: .9rem; }
+    button[disabled] { opacity: .62; cursor: wait; }
+    .danger { border-color: #a13d3d; color: #8d2424; }
+    .status-panel { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; }
+    .status-heading { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0; font-size: 1rem; }
+    .status-label { color: #596473; font-weight: 650; }
+    .status-pill { display: inline-flex; align-items: center; min-height: 24px; padding: 2px 9px; border-radius: 999px; background: #edf2f7; color: #263241; font-size: .88rem; text-transform: capitalize; }
+    .status-draft { background: #e6f0ff; color: #174b8f; }
+    .status-active { background: #e6f6ed; color: #17633a; }
+    .status-paused { background: #fff4d6; color: #765100; }
+    .status-completed { background: #edf2f7; color: #3f4a59; }
+    .status-archived { background: #f3e8e8; color: #7a2424; }
+    .status-actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+    .status-action-form { display: inline; padding: 0; margin: 0; border: 0; background: transparent; }
+    .status-panel .messages { flex-basis: 100%; margin: 0; }
+    .muted { color: #596473; }
+    .messages { padding: 0; list-style: none; }
+    .messages li { background: #fff7d6; border: 1px solid #e5ca6d; border-radius: 6px; padding: 10px; margin: 8px 0; }
+    .chat-user { border-left: 4px solid #146c94; }
+    .chat-assistant { border-left: 4px solid #6b8e23; }
+    .message-body > :first-child { margin-top: 8px; }
+    .message-body > :last-child { margin-bottom: 0; }
+    .outline { padding-left: 24px; }
+    .lesson-content { background: white; border: 1px solid #d7dce2; border-radius: 8px; padding: 18px; }
+    .errorlist { color: #8d2424; }
+    .loading { display: none; align-items: center; gap: 10px; color: #3f4a59; margin: 10px 0; }
+    .loading.htmx-request, .htmx-request .loading, .submitting .loading { display: flex; }
+    .spinner { width: 18px; height: 18px; border: 3px solid #c9d1db; border-top-color: #146c94; border-radius: 50%; animation: spin .8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @media (max-width: 760px) {
+      .dashboard-grid, .course-layout, .workflow-steps, .form-layout, .form-grid, .lesson-layout { grid-template-columns: 1fr; }
+      .course-sidebar, .feedback-sidebar { position: static; }
+      .page-header { align-items: stretch; }
+      .page-header .button { justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <a href="{% url 'courses:topic_list' %}">Topics</a>
+    <a href="{% url 'courses:active_courses' %}">Active Courses</a>
+    <a href="{% url 'courses:archived_courses' %}">Archive</a>
+  </header>
+  <main>
+    {% if messages %}
+      <ul class="messages">
+        {% for message in messages %}<li>{{ message }}</li>{% endfor %}
+      </ul>
+    {% endif %}
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

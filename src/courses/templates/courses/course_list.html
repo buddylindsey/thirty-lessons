@@ -1,0 +1,46 @@
+{% extends "courses/base.html" %}
+{% block content %}
+  <div class="page-header">
+    <div>
+      <h1>{{ title }}</h1>
+      <p class="muted">Review course progress and jump back into a learning program.</p>
+    </div>
+  </div>
+  <section class="panel">
+    <div class="section-title">
+      <h2>Courses</h2>
+      <span class="count-pill">{{ courses|length }}</span>
+    </div>
+    {% if courses %}
+      <div class="item-list">
+        {% for course in courses %}
+          <a class="list-card" href="{% url 'courses:course_detail' course.id %}">
+            <span class="list-card-title">
+              <span>{{ course.title }}</span>
+              <span class="status-pill status-{{ course.status }}">{{ course.status }}</span>
+            </span>
+            <p>{{ course.topic.title }}</p>
+            <span class="meta-row">
+              {% with lesson_count=course.lessons.count %}
+                {% if lesson_count == 0 %}
+                  <span class="meta-pill">No lessons sent yet</span>
+                {% elif lesson_count == 1 %}
+                  <span class="meta-pill">1 lesson sent</span>
+                {% else %}
+                  <span class="meta-pill">{{ lesson_count }} lessons sent</span>
+                {% endif %}
+              {% endwith %}
+              <span class="meta-pill">{{ course.audience_level }}</span>
+              <span class="meta-pill">{{ course.daily_time_commitment }}</span>
+              <span class="meta-pill">Updated {{ course.updated_at|date:"M j" }}</span>
+            </span>
+          </a>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state">
+        <p class="muted">No courses.</p>
+      </div>
+    {% endif %}
+  </section>
+{% endblock %}

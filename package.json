@@ -1,0 +1,10 @@
+{
+  "scripts": {
+    "test:e2e": "playwright test",
+    "test:e2e:docker": "E2E_DOCKER=1 PLAYWRIGHT_BASE_URL=http://127.0.0.1:8000 playwright test",
+    "test:e2e:install": "playwright install"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.44.0"
+  }
+}

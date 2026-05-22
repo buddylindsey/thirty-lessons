@@ -1,0 +1,10 @@
+.git
+.venv
+.venv312
+__pycache__
+*.pyc
+db.sqlite3
+node_modules
+test-results
+playwright-report
+.pytest_cache

@@ -1,0 +1,35 @@
+<section id="status-panel" class="panel status-panel">
+  {% if messages %}
+    <ul class="messages">
+      {% for message in messages %}<li>{{ message }}</li>{% endfor %}
+    </ul>
+  {% endif %}
+  <h2 class="status-heading">
+    <span class="status-label">Status</span>
+    <span class="status-pill status-{{ course.status }}" data-testid="course-status">{{ course.status }}</span>
+  </h2>
+  <div class="status-actions" aria-label="Course status actions">
+    {% if course.status != "active" and course.status != "completed" %}
+      <form class="status-action-form" method="post" action="{% url 'courses:course_status' course.id 'active' %}" hx-post="{% url 'courses:course_status' course.id 'active' %}" hx-target="#status-panel" hx-swap="outerHTML">
+        {% csrf_token %}
+        <button class="small" type="submit">{% if course.status == "archived" %}Restore{% else %}Activate{% endif %}</button>
+      </form>
+    {% endif %}
+    {% if course.status == "active" %}
+      <form class="status-action-form" method="post" action="{% url 'courses:course_status' course.id 'paused' %}" hx-post="{% url 'courses:course_status' course.id 'paused' %}" hx-target="#status-panel" hx-swap="outerHTML">
+        {% csrf_token %}
+        <button class="small" type="submit">Pause</button>
+      </form>
+      <form class="status-action-form" method="post" action="{% url 'courses:course_status' course.id 'completed' %}" hx-post="{% url 'courses:course_status' course.id 'completed' %}" hx-target="#status-panel" hx-swap="outerHTML">
+        {% csrf_token %}
+        <button class="small" type="submit">Complete</button>
+      </form>
+    {% endif %}
+    {% if course.status != "archived" %}
+      <form class="status-action-form" method="post" action="{% url 'courses:course_status' course.id 'archived' %}" hx-post="{% url 'courses:course_status' course.id 'archived' %}" hx-target="#status-panel" hx-swap="outerHTML">
+        {% csrf_token %}
+        <button class="small danger" type="submit">Archive</button>
+      </form>
+    {% endif %}
+  </div>
+</section>

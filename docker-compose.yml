@@ -1,0 +1,88 @@
+services:
+  web:
+    build: .
+    command: python manage.py runserver 0.0.0.0:8000
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgres://learning:learning@db:5432/learning
+      DB_HOST: db
+      DB_PORT: "5432"
+      DEBUG: "1"
+      SITE_BASE_URL: http://localhost:8000
+      EMAIL_BACKEND: ${EMAIL_BACKEND:-django.core.mail.backends.console.EmailBackend}
+      EMAIL_HOST: ${EMAIL_HOST:-}
+      EMAIL_PORT: ${EMAIL_PORT:-25}
+      EMAIL_USE_TLS: ${EMAIL_USE_TLS:-0}
+      EMAIL_USE_SSL: ${EMAIL_USE_SSL:-0}
+      EMAIL_HOST_USER: ${EMAIL_HOST_USER:-}
+      EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
+      DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:-lessons@example.com}
+      LESSON_RECIPIENT_EMAIL: ${LESSON_RECIPIENT_EMAIL:-learner@example.com}
+      AI_PROVIDER: ${AI_PROVIDER:-}
+      OPENAI_KEY: ${OPENAI_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4.1-mini}
+    depends_on:
+      - db
+
+  db:
+    image: postgres:16
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: learning
+      POSTGRES_USER: learning
+      POSTGRES_PASSWORD: learning
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  worker:
+    build: .
+    command: python manage.py generate_daily_lessons
+    profiles: ["jobs"]
+    environment:
+      DATABASE_URL: postgres://learning:learning@db:5432/learning
+      DB_HOST: db
+      DB_PORT: "5432"
+      SITE_BASE_URL: http://localhost:8000
+      EMAIL_BACKEND: ${EMAIL_BACKEND:-django.core.mail.backends.console.EmailBackend}
+      EMAIL_HOST: ${EMAIL_HOST:-}
+      EMAIL_PORT: ${EMAIL_PORT:-25}
+      EMAIL_USE_TLS: ${EMAIL_USE_TLS:-0}
+      EMAIL_USE_SSL: ${EMAIL_USE_SSL:-0}
+      EMAIL_HOST_USER: ${EMAIL_HOST_USER:-}
+      EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
+      DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:-lessons@example.com}
+      LESSON_RECIPIENT_EMAIL: ${LESSON_RECIPIENT_EMAIL:-learner@example.com}
+      AI_PROVIDER: ${AI_PROVIDER:-}
+      OPENAI_KEY: ${OPENAI_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4.1-mini}
+    depends_on:
+      - db
+
+  scheduler:
+    build: .
+    command: python manage.py scheduler
+    profiles: ["scheduler"]
+    environment:
+      DATABASE_URL: postgres://learning:learning@db:5432/learning
+      DB_HOST: db
+      DB_PORT: "5432"
+      SITE_BASE_URL: http://localhost:8000
+      EMAIL_BACKEND: ${EMAIL_BACKEND:-django.core.mail.backends.console.EmailBackend}
+      EMAIL_HOST: ${EMAIL_HOST:-}
+      EMAIL_PORT: ${EMAIL_PORT:-25}
+      EMAIL_USE_TLS: ${EMAIL_USE_TLS:-0}
+      EMAIL_USE_SSL: ${EMAIL_USE_SSL:-0}
+      EMAIL_HOST_USER: ${EMAIL_HOST_USER:-}
+      EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
+      DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:-lessons@example.com}
+      LESSON_RECIPIENT_EMAIL: ${LESSON_RECIPIENT_EMAIL:-learner@example.com}
+      AI_PROVIDER: ${AI_PROVIDER:-}
+      OPENAI_KEY: ${OPENAI_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4.1-mini}
+    depends_on:
+      - db
+
+volumes:
+  postgres_data:
