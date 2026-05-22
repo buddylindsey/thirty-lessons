@@ -1,8 +1,8 @@
-# 30-Day Learning Program Generator TDD
+# Thirty Lessons TDD
 
 ## Summary
 
-This project is a self-hosted, open-source learning platform that helps a user create and complete 30-day learning programs on arbitrary topics. The user defines a topic through a guided chat interface, the system generates a rough 30-day outline, and then a daily job generates and emails one lesson per day. Each lesson is stored in the application for later review, and the user can provide feedback through quick actions or freeform comments that influence future lesson generation.
+Thirty Lessons is a self-hosted, open-source learning platform for "30 Days to Learn Anything." It helps a user create and complete 30-day learning programs on arbitrary topics. The user defines a topic through a guided chat interface, the system generates a rough 30-day outline, and then a daily job generates and emails one lesson per day. Each lesson is stored in the application for later review, and the user can provide feedback through quick actions or freeform comments that influence future lesson generation.
 
 The application will be built with Django, HTMX, PostgreSQL, Docker Compose, and Playwright integration tests. The first version is designed for single-user/self-hosted use, not multi-tenant SaaS.
 
@@ -646,4 +646,3 @@ The MVP is complete when:
 10. Future lesson generation includes course context, recent lessons, and feedback.
 11. Playwright tests cover the main user workflows.
 12. Django tests cover model behavior, management commands, email sending, and AI provider integration.
-

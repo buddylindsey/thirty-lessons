@@ -3,13 +3,18 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}30-Day Learning{% endblock %}</title>
+  <title>{% block title %}Thirty Lessons{% endblock %}</title>
   <script src="https://unpkg.com/htmx.org@1.9.12"></script>
   <style>
     :root { color-scheme: light; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
     body { margin: 0; background: #f6f7f9; color: #20242a; }
     header { background: #1f2937; color: white; padding: 16px 24px; }
-    header a { color: white; margin-right: 16px; text-decoration: none; }
+    header a { color: white; text-decoration: none; }
+    .site-header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; }
+    .brand { display: grid; gap: 2px; }
+    .brand-name { font-size: 1.15rem; font-weight: 800; letter-spacing: 0; }
+    .brand-tagline { color: #d6dde7; font-size: .88rem; }
+    .nav-links { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; }
     main { max-width: 980px; margin: 0 auto; padding: 28px 20px 56px; }
     a { color: #0f5f8f; }
     .panel, form, .message { background: white; border: 1px solid #d7dce2; border-radius: 8px; padding: 16px; margin: 14px 0; }
@@ -116,9 +121,17 @@
 </head>
 <body>
   <header>
-    <a href="{% url 'courses:topic_list' %}">Topics</a>
-    <a href="{% url 'courses:active_courses' %}">Active Courses</a>
-    <a href="{% url 'courses:archived_courses' %}">Archive</a>
+    <div class="site-header">
+      <a class="brand" href="{% url 'courses:topic_list' %}" aria-label="Thirty Lessons home">
+        <span class="brand-name">Thirty Lessons</span>
+        <span class="brand-tagline">30 Days to Learn Anything</span>
+      </a>
+      <nav class="nav-links" aria-label="Primary">
+        <a href="{% url 'courses:topic_list' %}">Topics</a>
+        <a href="{% url 'courses:active_courses' %}">Active Courses</a>
+        <a href="{% url 'courses:archived_courses' %}">Archive</a>
+      </nav>
+    </div>
   </header>
   <main>
     {% if messages %}

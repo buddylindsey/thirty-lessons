@@ -1,6 +1,8 @@
 <div align="center">
 
-# 30-Day Newsletter Learning Platform 📚✉️
+# Thirty Lessons
+
+**30 Days to Learn Anything**
 
 A personal self-hosted learning app: topic planning → AI-guided course outline → daily lesson generation → email delivery → feedback-informed future lessons.
 
