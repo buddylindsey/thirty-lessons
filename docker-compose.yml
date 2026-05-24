@@ -21,7 +21,7 @@ services:
       LESSON_RECIPIENT_EMAIL: ${LESSON_RECIPIENT_EMAIL:-learner@example.com}
       AI_PROVIDER: ${AI_PROVIDER:-}
       OPENAI_KEY: ${OPENAI_KEY:-}
-      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4.1-mini}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-5.5}
     depends_on:
       - db
 
@@ -56,7 +56,7 @@ services:
       LESSON_RECIPIENT_EMAIL: ${LESSON_RECIPIENT_EMAIL:-learner@example.com}
       AI_PROVIDER: ${AI_PROVIDER:-}
       OPENAI_KEY: ${OPENAI_KEY:-}
-      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4.1-mini}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-5.5}
     depends_on:
       - db
 
@@ -80,7 +80,7 @@ services:
       LESSON_RECIPIENT_EMAIL: ${LESSON_RECIPIENT_EMAIL:-learner@example.com}
       AI_PROVIDER: ${AI_PROVIDER:-}
       OPENAI_KEY: ${OPENAI_KEY:-}
-      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4.1-mini}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-5.5}
     depends_on:
       - db
 

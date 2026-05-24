@@ -4,7 +4,7 @@
 
 **30 Days to Learn Anything**
 
-A personal self-hosted learning app: topic planning → AI-guided course outline → daily lesson generation → email delivery → feedback-informed future lessons.
+A personal self-hosted learning app for turning a topic into a 30-day course, generating one lesson per day, sending lessons by email, and using feedback to steer future lessons.
 
 ![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python)
 ![Django](https://img.shields.io/badge/Django-5.x-092E20?logo=django)
@@ -15,152 +15,158 @@ A personal self-hosted learning app: topic planning → AI-guided course outline
 
 </div>
 
-> **Intent:** This is a personal, self-hosted OSS project, not a SaaS product. It is built to help one learner create 30-day learning programs, receive one lesson per day by email, and use lightweight feedback to steer future lessons.
+Thirty Lessons helps one learner create and work through focused 30-day learning programs. You define a topic and goal, refine the course direction through an AI-guided chat, generate a 30-day outline, receive one lesson per day by email, and leave feedback that influences future lessons.
 
-## 📌 Table of Contents
-- [Overview](#overview)
-- [Key Features](#key-features)
-- [Design Tradeoffs](#design-tradeoffs-intentional)
-- [Non-goals](#non-goals)
-- [Quickstart](#quickstart)
-- [Local Endpoints](#local-endpoints)
-- [Useful Commands](#useful-commands)
-- [Technologies](#technologies)
-- [Architecture](#architecture)
-- [Configuration](#configuration)
-- [Project Structure](#project-structure)
-- [Contributing / Next Steps](#contributing--next-steps)
+This is a personal self-hosted tool, not a SaaS product. It is intentionally small, local-first, and designed around clear extension points rather than a large platform architecture.
 
-## ✨ Overview
-- 🧭 **Topic-first course planning**: create a broad topic, then define a 30-day program around a goal, audience level, lesson style, and daily time commitment.
-- 💬 **Guided chat refinement**: use a chat-style interface to clarify direction before generating the course outline.
-- 🧠 **AI provider boundary**: OpenAI support sits behind a small provider abstraction, with a fake provider available for local/demo usage.
-- 🗓️ **30-day outline generation**: each course stores a generated outline and can be activated only after an outline exists.
-- ✉️ **Daily lesson delivery**: a management command generates the next missing lesson for each active course and sends it by email.
-- 🔁 **Feedback loop**: quick feedback and freeform comments are stored with each lesson and included in future lesson context.
-- 🗃️ **Course memory**: a compressed memory record keeps long-running context useful without sending the entire history forever.
+## Why I Built This
 
-## ✅ Key Features
-- Django server-rendered UI with HTMX partial updates for chat, outline, status, and feedback panels.
-- Topic, course, lesson, feedback, chat message, and course memory models.
-- Course lifecycle states: `draft`, `active`, `paused`, `completed`, `archived`.
-- Daily generation command designed to run from cron, Docker, or the included scheduler command.
-- Email delivery through Django's email backend, with console email by default and SMTP support through env vars.
-- Markdown lesson rendering with HTML sanitization before display.
-- Docker Compose setup with Django app + Postgres.
-- Unit/integration tests for models, services, views, AI provider behavior, and management commands.
-- Playwright smoke/workflow tests for browser-level behavior.
+I built Thirty Lessons because I was already using AI to create learning plans, but the process was informal and easy to lose track of. The goal was to turn a vague idea, "AI-powered daily learning," into a small but usable self-hosted product with topics, courses, outlines, daily lessons, email delivery, feedback, and course memory.
 
-## ⚖️ Design Tradeoffs (Intentional)
-- The app is optimized for **personal self-hosting**, not multi-tenant SaaS concerns.
-- A simple Django management command is used for daily lesson generation instead of introducing Celery early.
-- The fake AI provider makes the app runnable without an API key and keeps tests deterministic.
-- Course generation uses layered context rather than sending every historical record to the model.
-- Server-rendered templates and HTMX keep the frontend small and easy to inspect.
+The first usable version was built in about a day of focused work spread across a few days. That is context, not a claim that the app is finished or production hardened. It is intentionally not perfect or overbuilt, but the core workflow is designed with clear seams so it can grow over time.
 
-## 🚫 Non-goals
-- Billing, teams, public course sharing, or multi-user account management.
-- Full LMS features such as quizzes, certificates, grading, or analytics dashboards.
-- Production-grade deployment hardening in the MVP.
-- Mobile apps or heavy client-side JavaScript.
+## What It Does
 
-## 🚀 Quickstart
-- Prereqs: Docker and Docker Compose.
-- Build and start the app:
-  - `docker compose build`
-  - `docker compose up`
-- Open the app:
-  - [http://localhost:8000](http://localhost:8000)
+- Creates learning topics and 30-day courses.
+- Uses a chat-style refinement flow before outline generation.
+- Generates and stores a structured 30-day outline.
+- Activates, pauses, completes, or archives courses.
+- Generates the next missing lesson for each active course.
+- Sends lessons by email with plain-text and HTML bodies.
+- Opens email feedback links on a confirmation modal instead of saving feedback on link visit.
+- Stores quick feedback and optional comments with each lesson.
+- Updates course memory so recurring feedback can influence future lessons.
+- Uses sanitized Markdown rendering for lesson display.
 
-The default Docker setup uses Postgres and Django's console email backend. Lessons will be printed to container logs unless SMTP is configured.
+## Engineering Notes
 
-### Optional: OpenAI + SMTP
-Create a `.env` file from `.env.example` and set:
+Thirty Lessons is intentionally small, but it demonstrates a few engineering decisions that matter when building AI-enabled software:
+
+- turning an ambiguous workflow into a usable product
+- keeping AI access behind a provider boundary
+- using a deterministic fake provider for local development and tests
+- validating generated outlines and lessons before saving them
+- letting the Django application own workflow state
+- using command-driven generation instead of adding background infrastructure too early
+- packaging the app with Docker Compose so it can be run locally
+
+AI is used as a provider, not as the owner of application state. Django stores the durable state, validates generated data, and decides when each AI call happens.
+
+## Quickstart
+
+Prerequisites:
+
+- Docker
+- Docker Compose
+
+Build and start the app:
 
 ```bash
-OPENAI_KEY=sk-your-key
-OPENAI_MODEL=gpt-4.1-mini
-
-EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
-EMAIL_HOST=smtp.fastmail.com
-EMAIL_PORT=465
-EMAIL_USE_SSL=1
-EMAIL_USE_TLS=0
-EMAIL_HOST_USER=you@example.com
-EMAIL_HOST_PASSWORD=your-app-password
-DEFAULT_FROM_EMAIL=you@example.com
-LESSON_RECIPIENT_EMAIL=you@example.com
-SITE_BASE_URL=http://localhost:8000
+docker compose build
+docker compose up
 ```
 
-Then run:
+Open:
 
-```bash
-docker compose --env-file .env up
-```
-
-## 🔗 Local Endpoints
 - Learning app: [http://localhost:8000](http://localhost:8000)
 - Django admin: [http://localhost:8000/admin/](http://localhost:8000/admin/)
 - Postgres: `localhost:5432`
 
-## 🛠 Useful Commands
-- Docker:
-  - `docker compose build`
-  - `docker compose up`
-  - `docker compose down`
-  - `docker compose exec web sh`
-  - `docker compose logs -f web`
-- Database:
-  - `docker compose run --rm web python manage.py migrate`
-  - `docker compose run --rm web python manage.py createsuperuser`
-- Admin user:
-  - start the app with `docker compose up -d web`
-  - shell into the running container with `docker compose exec web sh`
-  - create an admin login with `python manage.py createsuperuser`
-  - sign in at [http://localhost:8000/admin/](http://localhost:8000/admin/)
-- Demo data:
-  - `docker compose run --rm web python manage.py seed_demo_data`
-- Lesson generation:
-  - `docker compose run --rm web python manage.py generate_daily_lessons`
-  - `docker compose run --rm web python manage.py generate_daily_lessons --no-email`
-  - `./scripts/send_email.sh` updates course memory, then generates and emails daily lessons.
-- Email retry:
-  - `docker compose run --rm web python manage.py send_unsent_lessons`
-- Course memory:
-  - `docker compose run --rm web python manage.py update_course_memory`
-  - `docker compose run --rm web python manage.py update_course_memory <course_id>`
-- Scheduler:
-  - `docker compose --profile scheduler up scheduler`
-  - `docker compose run --rm scheduler python manage.py scheduler --interval-seconds 86400`
-- Tests:
-  - `docker compose run --rm web python manage.py test`
-  - `AI_PROVIDER=fake OPENAI_KEY= docker compose up -d web`
-  - `npm run test:e2e:docker`
+The default Docker setup uses Postgres and Django's console email backend. Lessons will be printed to container logs unless SMTP is configured.
 
-### Cron Email Run
-For a host cron job, point at the script in `scripts/`. The script resolves the project root, loads `.env` and `.env.email` when present, updates course memory, and runs the daily lesson command in Docker:
+To create an admin user:
 
-```cron
-0 7 * * * /path/to/30day-newsletter/scripts/send_email.sh >> /path/to/30day-newsletter/cron-email.log 2>&1
+```bash
+docker compose up -d web
+docker compose exec web sh
+python manage.py createsuperuser
 ```
 
-## 🧰 Technologies
-- Python 3.12
-- Django 5.x
-- Django templates
-- HTMX
-- Postgres 16
-- Markdown + Bleach
-- OpenAI Python SDK
-- Docker Compose
-- Playwright
+## Local / Self-Hosted Security Posture
 
-## 🧭 Architecture
+I currently run this as a local self-hosted tool behind Tailscale. That fits my use case, but it may not fit yours.
 
-The app keeps the main workflow in Django models and service functions, with AI access isolated behind a provider interface. Daily generation is intentionally command-driven so it can be run by cron, Docker, or the included scheduler.
+This project does not try to solve every deployment or security scenario. If you expose it beyond your local machine or private network, you are responsible for your own security posture: authentication, HTTPS, reverse proxy configuration, secrets management, database backups, allowed hosts, CSRF settings, and network access controls.
 
-### 1) Course creation path (Topic → Chat → Outline)
+Treat the default Docker setup as a local development/self-hosting starting point, not a hardened public deployment recipe. Bring your own security posture.
+
+## Useful Commands
+
+Docker:
+
+```bash
+docker compose build
+docker compose up
+docker compose down
+docker compose exec web sh
+docker compose logs -f web
+```
+
+Database:
+
+```bash
+docker compose run --rm web python manage.py migrate
+docker compose run --rm web python manage.py createsuperuser
+```
+
+Demo data:
+
+```bash
+docker compose run --rm web python manage.py seed_demo_data
+```
+
+Lesson generation:
+
+```bash
+docker compose run --rm web python manage.py generate_daily_lessons
+docker compose run --rm web python manage.py generate_daily_lessons --no-email
+./scripts/send_email.sh
+```
+
+`./scripts/send_email.sh` resolves the project root, loads `.env` and `.env.email` when present, updates course memory, then generates and emails daily lessons.
+
+Email retry:
+
+```bash
+docker compose run --rm web python manage.py send_unsent_lessons
+```
+
+Course memory:
+
+```bash
+docker compose run --rm web python manage.py update_course_memory
+docker compose run --rm web python manage.py update_course_memory <course_id>
+```
+
+Scheduler:
+
+```bash
+docker compose --profile scheduler up scheduler
+docker compose run --rm scheduler python manage.py scheduler --interval-seconds 86400
+```
+
+Tests:
+
+```bash
+docker compose run --rm web python manage.py test
+AI_PROVIDER=fake OPENAI_KEY= docker compose up -d web
+npm run test:e2e:docker
+```
+
+Host cron example:
+
+```cron
+0 8 * * * /home/user/Programming/30day-newsletter/scripts/send_email.sh >> /home/user/Programming/30day-newsletter/cron-email.log 2>&1
+```
+
+Cron uses the host's local timezone.
+
+## Architecture
+
+The app keeps the main workflow in Django models and service functions. AI access is isolated behind a provider interface, and daily generation is intentionally command-driven so it can run from cron, Docker, or the included scheduler.
+
+### Course Creation Path
+
 ```mermaid
 flowchart LR
   topic["Topic"] --> course["Draft Course"]
@@ -170,7 +176,8 @@ flowchart LR
   outline --> active["Active Course"]
 ```
 
-### 2) Daily lesson path (Active Course → Lesson → Email)
+### Daily Lesson Path
+
 ```mermaid
 flowchart LR
   cmd["generate_daily_lessons"] --> course["Active Course"]
@@ -180,18 +187,35 @@ flowchart LR
   lesson --> email["Email Delivery"]
 ```
 
-### 3) Feedback and memory path (Lesson Feedback → Future Context)
+### Feedback and Memory Path
+
 ```mermaid
 flowchart LR
   lesson["Lesson"] --> feedback["Quick Feedback / Comment"]
   feedback --> memory["Course Memory"]
-  memory --> context["Future Lesson Context"]
+  memory --> context["Future Context"]
   context --> next["Next Lesson"]
 ```
 
-## ⚙️ Configuration
+For more detail on the AI flow, see [docs/ai-flows.md](docs/ai-flows.md).
+
+## Extensibility
+
+The app is intentionally designed around a few simple seams:
+
+- AI provider logic is isolated, so another provider or local model could be added later.
+- Daily lesson generation runs through Django management commands, which keeps it cron-friendly and avoids requiring Celery, or Django's new Task Framework, for the first version.
+- Lesson context is built in one place from course settings, outline data, recent lesson summaries, feedback, and course memory.
+- Feedback affects future lessons rather than rewriting old lessons, keeping the workflow predictable.
+- Email delivery uses Django's email backend, so local console email and SMTP both work through configuration.
+- Server-rendered templates and HTMX keep the frontend small and easy to inspect.
+
+The current app avoids Celery and heavier background infrastructure on purpose. That can be added later if the operational needs justify it.
+
+## Configuration
 
 ### Core
+
 - `SECRET_KEY` - Django secret key.
 - `DEBUG` - defaults to `1` for local development.
 - `ALLOWED_HOSTS` - comma-separated Django hosts.
@@ -200,11 +224,15 @@ flowchart LR
 - `SITE_BASE_URL` - base URL used in lesson emails.
 
 ### AI Provider
+
 - `AI_PROVIDER` - `fake` or `openai`; defaults to `openai` when `OPENAI_KEY` is present, otherwise `fake`.
 - `OPENAI_KEY` - OpenAI API key.
-- `OPENAI_MODEL` - defaults to `gpt-4.1-mini`.
+- `OPENAI_MODEL` - defaults to `gpt-5.5`.
+
+The fake provider lets the app run locally without an API key and keeps tests deterministic.
 
 ### Email
+
 - `EMAIL_BACKEND` - defaults to Django console email backend.
 - `EMAIL_HOST`
 - `EMAIL_PORT`
@@ -215,7 +243,32 @@ flowchart LR
 - `DEFAULT_FROM_EMAIL`
 - `LESSON_RECIPIENT_EMAIL`
 
-## 📁 Project Structure
+Example `.env` for OpenAI and SMTP:
+
+```bash
+OPENAI_KEY=sk-your-key
+OPENAI_MODEL=gpt-5.5
+
+EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
+EMAIL_HOST=smtp.mailprovider.com
+EMAIL_PORT=465
+EMAIL_USE_SSL=1
+EMAIL_USE_TLS=0
+EMAIL_HOST_USER=you@example.com
+EMAIL_HOST_PASSWORD=your-app-password
+DEFAULT_FROM_EMAIL=you@example.com
+LESSON_RECIPIENT_EMAIL=you@example.com
+SITE_BASE_URL=http://localhost:8000
+```
+
+Run with:
+
+```bash
+docker compose --env-file .env up
+```
+
+## Project Structure
+
 ```text
 manage.py                   Root Django command entrypoint; adds src/ to Python path
 src/learning_platform/      Django project settings and root URLs
@@ -226,19 +279,30 @@ src/courses/tests/          Django unit and integration tests
 tests/e2e/                  Playwright browser tests
 scripts/                    Local helper scripts for cron/manual operations
 docker/                     Container entrypoint and Docker support files
-docs/                       Project notes and original specification
+docs/                       Project notes, including AI flow documentation
 docker-compose.yml          Local/self-hosted app + Postgres runtime
 Dockerfile                  Python app image
 ```
 
 The app uses a `src/` layout. Docker sets `PYTHONPATH=/app/src`, and `manage.py` adds local `src/` to `sys.path` so normal commands like `python manage.py test` still work from the repository root.
 
-## 🤝 Contributing / Next Steps
-- Keep changes focused around personal learning workflows and self-hosted operation.
-- Add tests for behavior changes, especially AI output validation and daily generation rules.
-- Future ideas:
-  - signed/idempotent email feedback links
-  - stronger outline and lesson response validation
-  - richer course progress views
-  - optional local-model provider
-  - a documented production-ish reverse proxy recipe for later self-hosted deployment
+## Non-Goals
+
+- Billing, teams, public course sharing, or multi-user account management.
+- Full LMS features such as quizzes, certificates, grading, or analytics dashboards.
+- Production-grade deployment hardening.
+- Mobile apps.
+- Heavy client-side JavaScript.
+
+## Contributing / Next Steps
+
+This is a first usable version of a personal self-hosted tool. Changes should stay focused around the core learning workflow and self-hosted operation.
+
+Useful next steps:
+
+- stronger outline and lesson response validation
+- richer course progress views
+- optional local-model provider
+- better operational docs for private-network self-hosting
+- a documented reverse proxy recipe for people who choose to expose it
+- more focused tests around AI context construction
