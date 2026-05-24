@@ -118,8 +118,12 @@ Lesson.objects.create(course=c,day_number=1,title='Marcus Aurelius',content_mark
 
   await expect(page.getByRole('heading', { name: 'Day 1: Marcus Aurelius' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Marcus Aurelius', exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'More practical' }).click();
+  await page.getByRole('link', { name: 'More practical' }).click();
+  await expect(page.getByRole('dialog', { name: 'Confirm Feedback' })).toBeVisible();
+  await page.getByLabel('Optional comment:').fill('I need more hands-on examples.');
+  await page.getByRole('button', { name: 'Save Feedback' }).click();
   await expect(page.getByTestId('feedback-item')).toContainText('More practical');
+  await expect(page.getByText('I need more hands-on examples.')).toBeVisible();
   await page.getByRole('button', { name: 'Save Note' }).click();
   await expect(page.getByText('Comment cannot be empty')).toBeVisible();
   await page.getByLabel('Comment:').fill('This was too abstract. I need more examples.');

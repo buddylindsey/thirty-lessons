@@ -16,4 +16,7 @@ if [ -f "$PROJECT_DIR/.env.email" ]; then
 fi
 
 # shellcheck disable=SC2086
+docker compose $compose_env_args run --rm web python manage.py update_course_memory
+
+# shellcheck disable=SC2086
 docker compose $compose_env_args run --rm web python manage.py generate_daily_lessons

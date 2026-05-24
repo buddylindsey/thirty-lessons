@@ -124,7 +124,7 @@ docker compose --env-file .env up
 - Lesson generation:
   - `docker compose run --rm web python manage.py generate_daily_lessons`
   - `docker compose run --rm web python manage.py generate_daily_lessons --no-email`
-  - `./scripts/send_email.sh`
+  - `./scripts/send_email.sh` updates course memory, then generates and emails daily lessons.
 - Email retry:
   - `docker compose run --rm web python manage.py send_unsent_lessons`
 - Course memory:
@@ -139,7 +139,7 @@ docker compose --env-file .env up
   - `npm run test:e2e:docker`
 
 ### Cron Email Run
-For a host cron job, point at the script in `scripts/`. The script resolves the project root, loads `.env` and `.env.email` when present, and runs the daily lesson command in Docker:
+For a host cron job, point at the script in `scripts/`. The script resolves the project root, loads `.env` and `.env.email` when present, updates course memory, and runs the daily lesson command in Docker:
 
 ```cron
 0 7 * * * /path/to/30day-newsletter/scripts/send_email.sh >> /path/to/30day-newsletter/cron-email.log 2>&1

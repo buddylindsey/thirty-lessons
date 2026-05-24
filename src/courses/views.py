@@ -4,6 +4,7 @@ from django.core.exceptions import ValidationError
 from django.http import HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils.http import urlencode
 from django.views import View
 from django.views.generic import CreateView, DetailView, ListView
 
@@ -11,7 +12,7 @@ from .ai import AIProviderError
 from .forms import ChatForm, CommentForm, CourseForm, QuickFeedbackForm, TopicForm
 from .markdown import render_markdown
 from .models import ChatMessage, Course, Lesson, LessonFeedback, Topic
-from .services import GenerationError, generate_outline, get_ai_provider, start_course_conversation
+from .services import GenerationError, generate_outline, get_ai_provider, lesson_email_title, start_course_conversation
 
 
 def is_htmx(request):
@@ -218,11 +219,20 @@ class LessonDetailView(DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        selected_feedback = self.request.GET.get("feedback", "")
+        feedback_values = {value for value, _label in LessonFeedback.FEEDBACK_CHOICES}
+        if selected_feedback == LessonFeedback.CUSTOM_COMMENT or selected_feedback not in feedback_values:
+            selected_feedback = ""
+        feedback_labels = dict(LessonFeedback.FEEDBACK_CHOICES)
         context.update(
             {
                 "content_html": render_markdown(self.object.content_markdown),
+                "lesson_display_title": lesson_email_title(self.object),
                 "comment_form": CommentForm(),
                 "feedback_choices": LessonFeedback.FEEDBACK_CHOICES,
+                "feedback_form": QuickFeedbackForm(initial={"feedback_type": selected_feedback}),
+                "selected_feedback": selected_feedback,
+                "selected_feedback_label": feedback_labels.get(selected_feedback, ""),
             }
         )
         return context
@@ -230,17 +240,28 @@ class LessonDetailView(DetailView):
 
 class QuickFeedbackView(View):
     def get(self, request, lesson_id, feedback_type):
-        return self.create_feedback(request, lesson_id, feedback_type)
-
-    def post(self, request, lesson_id, feedback_type):
-        return self.create_feedback(request, lesson_id, feedback_type)
-
-    def create_feedback(self, request, lesson_id, feedback_type):
         lesson = get_object_or_404(Lesson, id=lesson_id)
         form = QuickFeedbackForm({"feedback_type": feedback_type})
         if not form.is_valid():
             return HttpResponseBadRequest("Invalid feedback type.")
-        LessonFeedback.objects.get_or_create(lesson=lesson, feedback_type=form.cleaned_data["feedback_type"])
+        url = reverse("courses:lesson_detail", args=[lesson.id]) + "?" + urlencode({"feedback": feedback_type})
+        return redirect(url + "#feedback-modal")
+
+    def post(self, request, lesson_id, feedback_type):
+        lesson = get_object_or_404(Lesson, id=lesson_id)
+        post_data = request.POST.copy()
+        post_data["feedback_type"] = feedback_type
+        form = QuickFeedbackForm(post_data)
+        if not form.is_valid():
+            return HttpResponseBadRequest("Invalid feedback type.")
+        feedback, created = LessonFeedback.objects.get_or_create(
+            lesson=lesson,
+            feedback_type=form.cleaned_data["feedback_type"],
+        )
+        comment = form.cleaned_data["comment"]
+        if comment and (created or feedback.comment != comment):
+            feedback.comment = comment
+            feedback.save(update_fields=["comment"])
         if is_htmx(request):
             return render(
                 request,

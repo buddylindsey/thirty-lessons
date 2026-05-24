@@ -2,7 +2,7 @@
 {% block content %}
   <div class="page-header">
     <div>
-      <h1>Day {{ lesson.day_number }}: {{ lesson.title }}</h1>
+      <h1>{{ lesson_display_title }}</h1>
       <p><a href="{% url 'courses:course_detail' lesson.course.id %}">{{ lesson.course.title }}</a></p>
       <div class="lesson-meta">
         {% if lesson.email_sent_at %}
@@ -16,4 +16,28 @@
   </div>
   <article class="lesson-content">{{ content_html|safe }}</article>
   {% include "courses/partials/feedback_panel.html" %}
+  {% if selected_feedback %}
+    <div id="feedback-modal" class="modal-backdrop" role="presentation">
+      <section class="modal" role="dialog" aria-modal="true" aria-labelledby="feedback-modal-title">
+        <div class="panel-heading">
+          <div>
+            <h2 id="feedback-modal-title">Confirm Feedback</h2>
+            <p class="muted">Save "{{ selected_feedback_label }}" for this lesson.</p>
+          </div>
+          <a class="button small" href="{% url 'courses:lesson_detail' lesson.id %}" aria-label="Close feedback dialog">Close</a>
+        </div>
+        <form class="embedded-form" method="post" action="{% url 'courses:quick_feedback' lesson.id selected_feedback %}">
+          {% csrf_token %}
+          {{ feedback_form.comment.errors }}
+          {{ feedback_form.comment.label_tag }}
+          {{ feedback_form.comment }}
+          <p class="muted">Optional context will be stored with this feedback and used for future lesson generation.</p>
+          <div class="submit-row">
+            <button class="primary" type="submit">Save Feedback</button>
+            <a class="button" href="{% url 'courses:lesson_detail' lesson.id %}">Cancel</a>
+          </div>
+        </form>
+      </section>
+    </div>
+  {% endif %}
 {% endblock %}

@@ -1,12 +1,16 @@
 import logging
+import re
 
 from django.conf import settings
-from django.core.mail import EmailMessage
+from django.core.mail import EmailMultiAlternatives
 from django.db import IntegrityError, transaction
 from django.urls import reverse
+from django.utils.html import escape
+from django.utils.http import urlencode
 from django.utils import timezone
 
 from .ai import AIProviderError, get_ai_provider
+from .markdown import render_markdown
 from .models import ChatMessage, Course, CourseMemory, Lesson, LessonFeedback
 
 logger = logging.getLogger(__name__)
@@ -164,18 +168,44 @@ def generate_next_lesson(course: Course, send_email=True) -> Lesson | None:
 
 
 def feedback_url(lesson: Lesson, feedback_type: str) -> str:
-    return settings.SITE_BASE_URL + reverse("courses:quick_feedback", args=[lesson.id, feedback_type])
+    return (
+        settings.SITE_BASE_URL
+        + reverse("courses:lesson_detail", args=[lesson.id])
+        + "?"
+        + urlencode({"feedback": feedback_type})
+        + "#feedback-modal"
+    )
 
 
 def lesson_url(lesson: Lesson) -> str:
     return settings.SITE_BASE_URL + reverse("courses:lesson_detail", args=[lesson.id])
 
 
-def send_lesson_email(lesson: Lesson):
+def lesson_email_title(lesson: Lesson) -> str:
+    title = lesson.title.strip()
+    if re.match(rf"^day\s+{lesson.day_number}\s*:", title, flags=re.IGNORECASE):
+        return title
+    return f"Day {lesson.day_number}: {title}"
+
+
+def lesson_email_markdown(lesson: Lesson) -> str:
+    title = lesson_email_title(lesson)
+    lines = lesson.content_markdown.splitlines()
+    for index, line in enumerate(lines):
+        if not line.strip():
+            continue
+        match = re.match(r"^#\s+(.+?)\s*$", line)
+        if match and match.group(1).strip().lower() in {title.lower(), lesson.title.strip().lower()}:
+            return "\n".join(lines[index + 1 :]).lstrip()
+        return lesson.content_markdown
+    return lesson.content_markdown
+
+
+def lesson_email_text_body(lesson: Lesson) -> str:
     body = [
-        f"Day {lesson.day_number}: {lesson.title}",
+        lesson_email_title(lesson),
         "",
-        lesson.content_markdown,
+        lesson_email_markdown(lesson),
         "",
         f"View lesson: {lesson_url(lesson)}",
         "",
@@ -184,12 +214,37 @@ def send_lesson_email(lesson: Lesson):
     for feedback_type, label in LessonFeedback.FEEDBACK_CHOICES:
         if feedback_type != LessonFeedback.CUSTOM_COMMENT:
             body.append(f"{label}: {feedback_url(lesson, feedback_type)}")
-    email = EmailMessage(
-        subject=f"Day {lesson.day_number}: {lesson.title}",
-        body="\n".join(body),
+    return "\n".join(body)
+
+
+def lesson_email_html_body(lesson: Lesson) -> str:
+    feedback_links = []
+    for feedback_type, label in LessonFeedback.FEEDBACK_CHOICES:
+        if feedback_type != LessonFeedback.CUSTOM_COMMENT:
+            feedback_links.append(
+                f'<li><a href="{escape(feedback_url(lesson, feedback_type))}">{escape(label)}</a></li>'
+            )
+    return "\n".join(
+        [
+            f"<h1>{escape(lesson_email_title(lesson))}</h1>",
+            render_markdown(lesson_email_markdown(lesson)),
+            f'<p><a href="{escape(lesson_url(lesson))}">View lesson</a></p>',
+            "<h2>Quick feedback</h2>",
+            "<ul>",
+            *feedback_links,
+            "</ul>",
+        ]
+    )
+
+
+def send_lesson_email(lesson: Lesson):
+    email = EmailMultiAlternatives(
+        subject=lesson_email_title(lesson),
+        body=lesson_email_text_body(lesson),
         from_email=settings.DEFAULT_FROM_EMAIL,
         to=[settings.LESSON_RECIPIENT_EMAIL],
     )
+    email.attach_alternative(lesson_email_html_body(lesson), "text/html")
     email.send(fail_silently=False)
     lesson.email_sent_at = timezone.now()
     lesson.save(update_fields=["email_sent_at", "updated_at"])

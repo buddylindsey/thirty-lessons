@@ -31,3 +31,11 @@ class CommentForm(forms.Form):
 
 class QuickFeedbackForm(forms.Form):
     feedback_type = forms.ChoiceField(choices=LessonFeedback.FEEDBACK_CHOICES)
+    comment = forms.CharField(
+        label="Optional comment",
+        required=False,
+        widget=forms.Textarea(attrs={"rows": 3, "id": "id_feedback_comment"}),
+    )
+
+    def clean_comment(self):
+        return self.cleaned_data["comment"].strip()

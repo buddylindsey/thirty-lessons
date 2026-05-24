@@ -79,6 +79,11 @@ class ServiceTests(TestCase):
         self.assertEqual(Lesson.objects.filter(course=item).count(), 1)
         self.assertEqual(len(mail.outbox), 1)
         self.assertIn("View lesson", mail.outbox[0].body)
+        self.assertIn("/lessons/", mail.outbox[0].body)
+        self.assertIn("?feedback=more_practical#feedback-modal", mail.outbox[0].body)
+        self.assertEqual(mail.outbox[0].alternatives[0][1], "text/html")
+        self.assertIn('<a href="http://localhost:8000/lessons/', mail.outbox[0].alternatives[0][0])
+        self.assertIn("More practical</a>", mail.outbox[0].alternatives[0][0])
         generated.refresh_from_db()
         self.assertIsNotNone(generated.email_sent_at)
 
@@ -133,6 +138,28 @@ class ServiceTests(TestCase):
         generated.refresh_from_db()
         self.assertIsNotNone(generated.email_sent_at)
         self.assertIn("More practical", mail.outbox[0].body)
+        self.assertIn("<h1>Lesson</h1>", mail.outbox[0].alternatives[0][0])
+        self.assertNotIn("<script>", mail.outbox[0].alternatives[0][0])
+
+    def test_lesson_email_does_not_duplicate_day_prefix_or_leading_heading(self):
+        item = course(status=Course.ACTIVE)
+        generated = Lesson.objects.create(
+            course=item,
+            day_number=1,
+            title="Day 1: What a Piano Is, in Plain Language",
+            content_markdown="# Day 1: What a Piano Is, in Plain Language\n\nUseful content.",
+            summary="Summary",
+        )
+
+        send_lesson_email(generated)
+
+        self.assertEqual(mail.outbox[0].subject, "Day 1: What a Piano Is, in Plain Language")
+        self.assertEqual(mail.outbox[0].body.count("Day 1: What a Piano Is, in Plain Language"), 1)
+        self.assertEqual(
+            mail.outbox[0].alternatives[0][0].count("Day 1: What a Piano Is, in Plain Language"),
+            1,
+        )
+        self.assertNotIn("<!doctype html>", mail.outbox[0].alternatives[0][0])
 
     def test_update_memory_uses_provider_abstraction(self):
         provider = RecordingAI()

@@ -8,10 +8,7 @@
   <div class="feedback-actions" aria-label="Quick feedback actions">
     {% for value, label in feedback_choices %}
       {% if value != "custom_comment" %}
-        <form class="feedback-action-form" method="post" action="{% url 'courses:quick_feedback' lesson.id value %}" hx-post="{% url 'courses:quick_feedback' lesson.id value %}" hx-target="#feedback-panel" hx-swap="outerHTML">
-          {% csrf_token %}
-          <button type="submit">{{ label }}</button>
-        </form>
+        <a class="button" href="{% url 'courses:lesson_detail' lesson.id %}?feedback={{ value }}#feedback-modal">{{ label }}</a>
       {% endif %}
     {% endfor %}
   </div>
