@@ -11,7 +11,7 @@ from django.utils import timezone
 
 from .ai import AIProviderError, get_ai_provider
 from .markdown import render_markdown
-from .models import ChatMessage, Course, CourseMemory, Lesson, LessonFeedback
+from .models import ChatMessage, Course, CourseMemory, Lesson, LessonDiscussionMessage, LessonFeedback
 
 logger = logging.getLogger(__name__)
 
@@ -117,6 +117,47 @@ def build_daily_lesson_context(course: Course, day_number: int) -> dict:
         "recent_feedback": recent_feedback,
         "course_memory": memory.content if memory else "",
     }
+
+
+def build_lesson_discussion_context(lesson: Lesson) -> dict:
+    course = lesson.course
+    recent_lessons = list(
+        course.lessons.filter(day_number__lt=lesson.day_number)
+        .order_by("-day_number")
+        .values("day_number", "title", "summary")[:3]
+    )
+    recent_lessons.reverse()
+    lesson_feedback = list(lesson.feedback.values("feedback_type", "comment"))
+    discussion_history = list(
+        lesson.discussion_messages.order_by("-created_at").values("role", "content", "created_at")[:12]
+    )
+    discussion_history.reverse()
+    memory = getattr(course, "memory", None)
+    return {
+        **course_context(course),
+        "lesson": {
+            "day_number": lesson.day_number,
+            "title": lesson.title,
+            "summary": lesson.summary,
+            "content_markdown": lesson.content_markdown,
+        },
+        "recent_lessons": recent_lessons,
+        "lesson_feedback": lesson_feedback,
+        "course_memory": memory.content if memory else "",
+        "discussion_history": discussion_history,
+    }
+
+
+def continue_lesson_discussion(lesson: Lesson, message: str) -> LessonDiscussionMessage:
+    message = require_non_empty_string(message, "discussion message")
+    LessonDiscussionMessage.objects.create(lesson=lesson, role=ChatMessage.USER, content=message)
+    context = build_lesson_discussion_context(lesson)
+    try:
+        response = get_ai_provider().generate_lesson_discussion_response(context)
+    except AIProviderError as exc:
+        raise GenerationError(str(exc)) from exc
+    response = require_non_empty_string(response, "lesson discussion response")
+    return LessonDiscussionMessage.objects.create(lesson=lesson, role=ChatMessage.ASSISTANT, content=response)
 
 
 def next_missing_day(course: Course) -> int | None:

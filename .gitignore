@@ -11,3 +11,4 @@ playwright-report/
 .pytest_cache/
 .env
 .env.email
+backups/

@@ -27,6 +27,7 @@ The provider interface currently supports:
 - `generate_chat_response(messages)`
 - `generate_course_outline(context)`
 - `generate_daily_lesson(context)`
+- `generate_lesson_discussion_response(context)`
 - `update_course_memory(context)`
 
 ## Course Creation and Initial Chat
@@ -174,6 +175,28 @@ This keeps feedback simple and predictable:
 ```text
 Generate lesson -> learner gives feedback -> future lesson sees feedback
 ```
+
+## Lesson Discussion
+
+Each lesson has its own discussion thread for follow-up questions, clarification, examples, and deeper exploration.
+
+Lesson discussion is separate from feedback:
+
+- discussion helps the learner understand the current lesson right now
+- feedback steers future generated lessons
+
+When the learner sends a lesson discussion message, the app stores the user message, builds bounded lesson context, asks the AI provider for a response, and stores the assistant message.
+
+The discussion context includes:
+
+- current lesson title, day number, summary, and Markdown content
+- course settings and stable context
+- up to 3 previous lesson summaries
+- feedback attached to the current lesson
+- current course memory, if one exists
+- prior messages in the lesson discussion
+
+The response is rendered as Markdown on the lesson page. It does not replace the original lesson.
 
 ## Course Memory
 

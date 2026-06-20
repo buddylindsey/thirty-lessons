@@ -93,3 +93,20 @@ class OpenAIProviderTests(SimpleTestCase):
 
         self.assertEqual(result["title"], "Day 1")
         self.assertEqual(result["content_markdown"], "# Day 1")
+
+    def test_openai_lesson_discussion_uses_lesson_context(self):
+        client = FakeOpenAIClient("Try this smaller example.")
+        provider = OpenAIProvider(client=client, model="test-model")
+
+        response = provider.generate_lesson_discussion_response(
+            {
+                "lesson": {"title": "Marcus Aurelius", "content_markdown": "Useful content."},
+                "discussion_history": [{"role": "user", "content": "Can you simplify this?"}],
+            }
+        )
+
+        self.assertEqual(response, "Try this smaller example.")
+        call = client.responses.calls[0]
+        self.assertEqual(call["model"], "test-model")
+        self.assertIn("single lesson", call["instructions"])
+        self.assertIn("Marcus Aurelius", call["input"])

@@ -9,7 +9,9 @@ services:
       DB_HOST: db
       DB_PORT: "5432"
       DEBUG: "1"
-      SITE_BASE_URL: http://localhost:8000
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1,0.0.0.0,web}
+      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-http://localhost:8000,http://127.0.0.1:8000}
+      SITE_BASE_URL: ${SITE_BASE_URL:-http://localhost:8000}
       EMAIL_BACKEND: ${EMAIL_BACKEND:-django.core.mail.backends.console.EmailBackend}
       EMAIL_HOST: ${EMAIL_HOST:-}
       EMAIL_PORT: ${EMAIL_PORT:-25}
@@ -44,7 +46,9 @@ services:
       DATABASE_URL: postgres://learning:learning@db:5432/learning
       DB_HOST: db
       DB_PORT: "5432"
-      SITE_BASE_URL: http://localhost:8000
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1,0.0.0.0,web}
+      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-http://localhost:8000,http://127.0.0.1:8000}
+      SITE_BASE_URL: ${SITE_BASE_URL:-http://localhost:8000}
       EMAIL_BACKEND: ${EMAIL_BACKEND:-django.core.mail.backends.console.EmailBackend}
       EMAIL_HOST: ${EMAIL_HOST:-}
       EMAIL_PORT: ${EMAIL_PORT:-25}
@@ -68,7 +72,9 @@ services:
       DATABASE_URL: postgres://learning:learning@db:5432/learning
       DB_HOST: db
       DB_PORT: "5432"
-      SITE_BASE_URL: http://localhost:8000
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1,0.0.0.0,web}
+      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-http://localhost:8000,http://127.0.0.1:8000}
+      SITE_BASE_URL: ${SITE_BASE_URL:-http://localhost:8000}
       EMAIL_BACKEND: ${EMAIL_BACKEND:-django.core.mail.backends.console.EmailBackend}
       EMAIL_HOST: ${EMAIL_HOST:-}
       EMAIL_PORT: ${EMAIL_PORT:-25}

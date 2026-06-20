@@ -37,7 +37,7 @@
         {% if course.lessons.all %}
           <div class="item-list">
             {% for lesson in course.lessons.all %}
-              <a class="list-card" href="{% url 'courses:lesson_detail' lesson.id %}">
+              <a class="list-card {% if lesson.is_completed %}lesson-card-completed{% endif %}" href="{% url 'courses:lesson_detail' lesson.id %}">
                 <span class="list-card-title">Day {{ lesson.day_number }}: {{ lesson.title }}</span>
                 <p>{{ lesson.summary|truncatechars:140 }}</p>
                 <span class="meta-row">
@@ -45,6 +45,11 @@
                     <span class="meta-pill">Sent {{ lesson.email_sent_at|date:"M j" }}</span>
                   {% else %}
                     <span class="meta-pill">Email not sent</span>
+                  {% endif %}
+                  {% if lesson.is_completed %}
+                    <span class="meta-pill">Completed {{ lesson.completed_at|date:"M j" }}</span>
+                  {% else %}
+                    <span class="meta-pill">Not completed</span>
                   {% endif %}
                 </span>
               </a>

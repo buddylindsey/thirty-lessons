@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import ChatMessage, Course, CourseMemory, Lesson, LessonFeedback, Topic
+from .models import ChatMessage, Course, CourseMemory, Lesson, LessonDiscussionMessage, LessonFeedback, Topic
 
 
 class CourseInline(admin.TabularInline):
@@ -33,7 +33,7 @@ class ChatMessageInline(admin.TabularInline):
 
 class LessonInline(admin.TabularInline):
     model = Lesson
-    fields = ("day_number", "title", "summary", "email_sent_at", "generated_at")
+    fields = ("day_number", "title", "summary", "email_sent_at", "completed_at", "generated_at")
     readonly_fields = ("generated_at",)
     extra = 0
     show_change_link = True
@@ -100,14 +100,22 @@ class LessonFeedbackInline(admin.TabularInline):
     show_change_link = True
 
 
+class LessonDiscussionMessageInline(admin.TabularInline):
+    model = LessonDiscussionMessage
+    fields = ("role", "content", "created_at")
+    readonly_fields = ("created_at",)
+    extra = 0
+    show_change_link = True
+
+
 @admin.register(Lesson)
 class LessonAdmin(admin.ModelAdmin):
-    list_display = ("title", "course", "day_number", "email_sent_at", "generated_at", "updated_at")
-    list_filter = ("course", "day_number", "email_sent_at", "generated_at")
+    list_display = ("title", "course", "day_number", "email_sent_at", "completed_at", "generated_at", "updated_at")
+    list_filter = ("course", "day_number", "email_sent_at", "completed_at", "generated_at")
     search_fields = ("title", "summary", "content_markdown", "course__title", "course__topic__title")
     readonly_fields = ("created_at", "updated_at", "generated_at")
     autocomplete_fields = ("course",)
-    inlines = (LessonFeedbackInline,)
+    inlines = (LessonDiscussionMessageInline, LessonFeedbackInline)
     ordering = ("course", "day_number")
 
 
@@ -135,6 +143,19 @@ class LessonFeedbackAdmin(admin.ModelAdmin):
     @admin.display(description="Comment")
     def short_comment(self, obj):
         return obj.comment[:80]
+
+
+@admin.register(LessonDiscussionMessage)
+class LessonDiscussionMessageAdmin(admin.ModelAdmin):
+    list_display = ("lesson", "role", "short_content", "created_at")
+    list_filter = ("role", "created_at")
+    search_fields = ("content", "lesson__title", "lesson__course__title")
+    readonly_fields = ("created_at",)
+    autocomplete_fields = ("lesson",)
+
+    @admin.display(description="Content")
+    def short_content(self, obj):
+        return obj.content[:80]
 
 
 @admin.register(CourseMemory)

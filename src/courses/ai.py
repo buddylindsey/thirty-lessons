@@ -16,6 +16,9 @@ class AIProvider:
     def generate_daily_lesson(self, context: dict) -> dict:
         raise NotImplementedError
 
+    def generate_lesson_discussion_response(self, context: dict) -> str:
+        raise NotImplementedError
+
     def update_course_memory(self, context: dict) -> str:
         raise NotImplementedError
 
@@ -66,6 +69,15 @@ class FakeAIProvider(AIProvider):
             ),
             "summary": f"Covered {title} with a short practice prompt.",
         }
+
+    def generate_lesson_discussion_response(self, context: dict) -> str:
+        latest = next((m["content"] for m in reversed(context.get("discussion_history", [])) if m["role"] == "user"), "")
+        lesson = context["lesson"]
+        return (
+            f"Let's extend **{lesson['title']}** around your question: {latest}\n\n"
+            "A practical way to explore this is to restate the idea in your own words, then try one "
+            "small example before moving on."
+        )
 
     def update_course_memory(self, context: dict) -> str:
         feedback = context.get("feedback", [])
@@ -166,6 +178,17 @@ class OpenAIProvider(AIProvider):
                 "required": ["title", "content_markdown", "summary"],
                 "additionalProperties": False,
             },
+        )
+
+    def generate_lesson_discussion_response(self, context: dict) -> str:
+        return self._text_response(
+            "You are helping a learner extend and understand a single lesson from a personal "
+            "30-day course. Answer the learner's latest question using the supplied lesson, course, "
+            "recent lesson summaries, feedback, memory, and discussion history. Stay focused on the "
+            "current lesson unless the learner asks for broader connections. Prefer concrete examples, "
+            "short explanations, and small practice prompts. Do not generate a replacement full lesson "
+            "unless explicitly asked. Format the response as readable markdown.",
+            json.dumps(context, default=str),
         )
 
     def update_course_memory(self, context: dict) -> str:

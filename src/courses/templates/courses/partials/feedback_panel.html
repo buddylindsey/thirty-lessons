@@ -7,7 +7,7 @@
   </div>
   <div class="feedback-actions" aria-label="Quick feedback actions">
     {% for value, label in feedback_choices %}
-      {% if value != "custom_comment" %}
+      {% if value != "custom_comment" and value != "completion_note" %}
         <a class="button" href="{% url 'courses:lesson_detail' lesson.id %}?feedback={{ value }}#feedback-modal">{{ label }}</a>
       {% endif %}
     {% endfor %}

@@ -33,6 +33,7 @@ The first usable version was built in about a day of focused work spread across 
 - Activates, pauses, completes, or archives courses.
 - Generates the next missing lesson for each active course.
 - Sends lessons by email with plain-text and HTML bodies.
+- Supports per-lesson discussion for follow-up questions and examples.
 - Opens email feedback links on a confirmation modal instead of saving feedback on link visit.
 - Stores quick feedback and optional comments with each lesson.
 - Updates course memory so recurring feedback can influence future lessons.
@@ -138,6 +139,13 @@ docker compose run --rm web python manage.py update_course_memory
 docker compose run --rm web python manage.py update_course_memory <course_id>
 ```
 
+Database backup:
+
+```bash
+./scripts/backup_db.sh
+docker compose exec -T db psql --username learning --dbname learning < backups/<backup-file>.sql
+```
+
 Scheduler:
 
 ```bash
@@ -149,9 +157,10 @@ Tests:
 
 ```bash
 docker compose run --rm web python manage.py test
-AI_PROVIDER=fake OPENAI_KEY= docker compose up -d web
 npm run test:e2e:docker
 ```
+
+`npm run test:e2e:docker` creates a disposable Postgres database named `learning_e2e`, runs a separate `e2e-web` service on port `8001`, and drops the test database when the run finishes. It should not be pointed at the normal self-hosted database.
 
 Host cron example:
 
@@ -206,6 +215,7 @@ The app is intentionally designed around a few simple seams:
 - AI provider logic is isolated, so another provider or local model could be added later.
 - Daily lesson generation runs through Django management commands, which keeps it cron-friendly and avoids requiring Celery, or Django's new Task Framework, for the first version.
 - Lesson context is built in one place from course settings, outline data, recent lesson summaries, feedback, and course memory.
+- Lesson discussion is scoped to the current lesson, using bounded context instead of opening a separate general chat.
 - Feedback affects future lessons rather than rewriting old lessons, keeping the workflow predictable.
 - Email delivery uses Django's email backend, so local console email and SMTP both work through configuration.
 - Server-rendered templates and HTMX keep the frontend small and easy to inspect.

@@ -16,6 +16,8 @@ urlpatterns = [
     path("courses/<int:course_id>/outline/", views.OutlineGenerateView.as_view(), name="outline_generate"),
     path("courses/<int:course_id>/status/<str:status>/", views.CourseStatusView.as_view(), name="course_status"),
     path("lessons/<int:lesson_id>/", views.LessonDetailView.as_view(), name="lesson_detail"),
+    path("lessons/<int:lesson_id>/discussion/", views.LessonDiscussionSubmitView.as_view(), name="lesson_discussion_submit"),
+    path("lessons/<int:lesson_id>/completion/", views.LessonCompletionView.as_view(), name="lesson_completion"),
     path(
         "lessons/<int:lesson_id>/feedback/<str:feedback_type>/",
         views.QuickFeedbackView.as_view(),

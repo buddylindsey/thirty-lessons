@@ -106,6 +106,7 @@ class Lesson(models.Model):
     content_markdown = models.TextField()
     summary = models.TextField()
     email_sent_at = models.DateTimeField(null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
     generated_at = models.DateTimeField(default=timezone.now)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -119,6 +120,27 @@ class Lesson(models.Model):
     def __str__(self):
         return f"Day {self.day_number}: {self.title}"
 
+    @property
+    def is_completed(self):
+        return self.completed_at is not None
+
+    def mark_complete(self):
+        if self.completed_at is None:
+            self.completed_at = timezone.now()
+
+    def mark_incomplete(self):
+        self.completed_at = None
+
+
+class LessonDiscussionMessage(models.Model):
+    lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE, related_name="discussion_messages")
+    role = models.CharField(max_length=20, choices=ChatMessage.ROLE_CHOICES)
+    content = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at"]
+
 
 class LessonFeedback(models.Model):
     TOO_EASY = "too_easy"
@@ -130,6 +152,7 @@ class LessonFeedback(models.Model):
     CONFUSING = "confusing"
     SKIP_AHEAD = "skip_ahead"
     CUSTOM_COMMENT = "custom_comment"
+    COMPLETION_NOTE = "completion_note"
     FEEDBACK_CHOICES = [
         (TOO_EASY, "Too easy"),
         (TOO_HARD, "Too hard"),
@@ -140,6 +163,7 @@ class LessonFeedback(models.Model):
         (CONFUSING, "Confusing"),
         (SKIP_AHEAD, "Skip ahead"),
         (CUSTOM_COMMENT, "Comment"),
+        (COMPLETION_NOTE, "Completion note"),
     ]
 
     lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE, related_name="feedback")

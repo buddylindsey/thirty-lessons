@@ -1,0 +1,31 @@
+{% load markdown_tags %}
+<section id="lesson-discussion-panel" class="panel">
+  <div class="panel-heading">
+    <div>
+      <h2>Discussion</h2>
+      <p class="muted">Ask follow-up questions, request examples, or go deeper on this lesson.</p>
+    </div>
+  </div>
+  {% if messages %}
+    <ul class="messages">
+      {% for message in messages %}<li>{{ message }}</li>{% endfor %}
+    </ul>
+  {% endif %}
+  <div>
+    {% for message in lesson.discussion_messages.all %}
+      <article class="message chat-{{ message.role }}" data-testid="lesson-discussion-message">
+        <strong>{{ message.role|title }}</strong>
+        <div class="message-body">{{ message.content|markdown_html }}</div>
+      </article>
+    {% endfor %}
+  </div>
+  <form class="embedded-form" method="post" action="{% url 'courses:lesson_discussion_submit' lesson.id %}" hx-post="{% url 'courses:lesson_discussion_submit' lesson.id %}" hx-target="#lesson-discussion-panel" hx-swap="outerHTML" hx-indicator="#lesson-discussion-loading" hx-disabled-elt="button">
+    {% csrf_token %}
+    {{ discussion_form.as_p }}
+    <button class="primary" type="submit">Send</button>
+    <div id="lesson-discussion-loading" class="loading" role="status" aria-live="polite">
+      <span class="spinner" aria-hidden="true"></span>
+      <span>Waiting for the assistant response...</span>
+    </div>
+  </form>
+</section>

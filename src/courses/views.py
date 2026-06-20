@@ -9,10 +9,25 @@ from django.views import View
 from django.views.generic import CreateView, DetailView, ListView
 
 from .ai import AIProviderError
-from .forms import ChatForm, CommentForm, CourseForm, QuickFeedbackForm, TopicForm
+from .forms import (
+    ChatForm,
+    CommentForm,
+    CourseForm,
+    LessonCompletionForm,
+    LessonDiscussionForm,
+    QuickFeedbackForm,
+    TopicForm,
+)
 from .markdown import render_markdown
 from .models import ChatMessage, Course, Lesson, LessonFeedback, Topic
-from .services import GenerationError, generate_outline, get_ai_provider, lesson_email_title, start_course_conversation
+from .services import (
+    GenerationError,
+    continue_lesson_discussion,
+    generate_outline,
+    get_ai_provider,
+    lesson_email_title,
+    start_course_conversation,
+)
 
 
 def is_htmx(request):
@@ -221,16 +236,23 @@ class LessonDetailView(DetailView):
         context = super().get_context_data(**kwargs)
         selected_feedback = self.request.GET.get("feedback", "")
         feedback_values = {value for value, _label in LessonFeedback.FEEDBACK_CHOICES}
-        if selected_feedback == LessonFeedback.CUSTOM_COMMENT or selected_feedback not in feedback_values:
+        if selected_feedback in {
+            LessonFeedback.CUSTOM_COMMENT,
+            LessonFeedback.COMPLETION_NOTE,
+        } or selected_feedback not in feedback_values:
             selected_feedback = ""
+        selected_completion = self.request.GET.get("completion") == LessonCompletionForm.COMPLETE
         feedback_labels = dict(LessonFeedback.FEEDBACK_CHOICES)
         context.update(
             {
                 "content_html": render_markdown(self.object.content_markdown),
                 "lesson_display_title": lesson_email_title(self.object),
                 "comment_form": CommentForm(),
+                "completion_form": LessonCompletionForm(initial={"action": LessonCompletionForm.COMPLETE}),
+                "discussion_form": LessonDiscussionForm(),
                 "feedback_choices": LessonFeedback.FEEDBACK_CHOICES,
                 "feedback_form": QuickFeedbackForm(initial={"feedback_type": selected_feedback}),
+                "selected_completion": selected_completion,
                 "selected_feedback": selected_feedback,
                 "selected_feedback_label": feedback_labels.get(selected_feedback, ""),
             }
@@ -238,9 +260,39 @@ class LessonDetailView(DetailView):
         return context
 
 
+class LessonDiscussionSubmitView(View):
+    def post(self, request, lesson_id):
+        lesson = get_object_or_404(Lesson, id=lesson_id)
+        form = LessonDiscussionForm(request.POST or None)
+        if form.is_valid():
+            try:
+                continue_lesson_discussion(lesson, form.cleaned_data["message"])
+            except GenerationError as exc:
+                messages.error(request, str(exc))
+            lesson.refresh_from_db()
+            if is_htmx(request):
+                return render(
+                    request,
+                    "courses/partials/lesson_discussion_panel.html",
+                    {"lesson": lesson, "discussion_form": LessonDiscussionForm()},
+                )
+            return redirect("courses:lesson_detail", lesson.id)
+        if is_htmx(request):
+            return render(
+                request,
+                "courses/partials/lesson_discussion_panel.html",
+                {"lesson": lesson, "discussion_form": form},
+            )
+        return HttpResponseBadRequest("Invalid discussion message.")
+
+
 class QuickFeedbackView(View):
+    non_quick_feedback_types = {LessonFeedback.CUSTOM_COMMENT, LessonFeedback.COMPLETION_NOTE}
+
     def get(self, request, lesson_id, feedback_type):
         lesson = get_object_or_404(Lesson, id=lesson_id)
+        if feedback_type in self.non_quick_feedback_types:
+            return HttpResponseBadRequest("Invalid feedback type.")
         form = QuickFeedbackForm({"feedback_type": feedback_type})
         if not form.is_valid():
             return HttpResponseBadRequest("Invalid feedback type.")
@@ -249,6 +301,8 @@ class QuickFeedbackView(View):
 
     def post(self, request, lesson_id, feedback_type):
         lesson = get_object_or_404(Lesson, id=lesson_id)
+        if feedback_type in self.non_quick_feedback_types:
+            return HttpResponseBadRequest("Invalid feedback type.")
         post_data = request.POST.copy()
         post_data["feedback_type"] = feedback_type
         form = QuickFeedbackForm(post_data)
@@ -267,6 +321,42 @@ class QuickFeedbackView(View):
                 request,
                 "courses/partials/feedback_panel.html",
                 {"lesson": lesson, "comment_form": CommentForm(), "feedback_choices": LessonFeedback.FEEDBACK_CHOICES},
+            )
+        return redirect("courses:lesson_detail", lesson.id)
+
+
+class LessonCompletionView(View):
+    def get(self, request, lesson_id):
+        lesson = get_object_or_404(Lesson, id=lesson_id)
+        url = reverse("courses:lesson_detail", args=[lesson.id]) + "?" + urlencode({"completion": "complete"})
+        return redirect(url + "#completion-modal")
+
+    def post(self, request, lesson_id):
+        lesson = get_object_or_404(Lesson, id=lesson_id)
+        form = LessonCompletionForm(request.POST or None)
+        if not form.is_valid():
+            return HttpResponseBadRequest("Invalid completion action.")
+
+        action = form.cleaned_data["action"]
+        if action == LessonCompletionForm.COMPLETE:
+            lesson.mark_complete()
+            lesson.save(update_fields=["completed_at", "updated_at"])
+            comment = form.cleaned_data["comment"]
+            if comment:
+                LessonFeedback.objects.create(
+                    lesson=lesson,
+                    feedback_type=LessonFeedback.COMPLETION_NOTE,
+                    comment=comment,
+                )
+        else:
+            lesson.mark_incomplete()
+            lesson.save(update_fields=["completed_at", "updated_at"])
+
+        if is_htmx(request):
+            return render(
+                request,
+                "courses/partials/lesson_completion_panel.html",
+                {"lesson": lesson, "completion_form": LessonCompletionForm(initial={"action": action})},
             )
         return redirect("courses:lesson_detail", lesson.id)
 

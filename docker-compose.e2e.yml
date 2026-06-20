@@ -1,0 +1,22 @@
+services:
+  e2e-web:
+    build: .
+    command: python manage.py runserver 0.0.0.0:8000
+    ports:
+      - "8001:8000"
+    environment:
+      DATABASE_URL: postgres://learning:learning@db:5432/learning_e2e
+      DB_HOST: db
+      DB_PORT: "5432"
+      DEBUG: "1"
+      ALLOWED_HOSTS: localhost,127.0.0.1,0.0.0.0,e2e-web
+      CSRF_TRUSTED_ORIGINS: http://localhost:8001,http://127.0.0.1:8001
+      SITE_BASE_URL: http://127.0.0.1:8001
+      EMAIL_BACKEND: django.core.mail.backends.console.EmailBackend
+      DEFAULT_FROM_EMAIL: lessons@example.com
+      LESSON_RECIPIENT_EMAIL: learner@example.com
+      AI_PROVIDER: fake
+      OPENAI_KEY: ""
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-5.5}
+    depends_on:
+      - db

@@ -1,0 +1,25 @@
+<section id="lesson-completion-panel" class="panel lesson-completion-panel">
+  <div class="panel-heading">
+    <div>
+      <h2>Completion</h2>
+      {% if lesson.is_completed %}
+        <p class="muted">Marked complete {{ lesson.completed_at|date:"M j, Y" }}.</p>
+      {% else %}
+        <p class="muted">Mark this lesson complete when you are done with it.</p>
+      {% endif %}
+    </div>
+    <div class="submit-row">
+      {% if lesson.is_completed %}
+        <span class="status-pill" data-testid="lesson-completion-status">completed</span>
+        <form method="post" action="{% url 'courses:lesson_completion' lesson.id %}" hx-post="{% url 'courses:lesson_completion' lesson.id %}" hx-target="#lesson-completion-panel" hx-swap="outerHTML">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="incomplete">
+          <button class="small" type="submit">Mark Incomplete</button>
+        </form>
+      {% else %}
+        <span class="status-pill" data-testid="lesson-completion-status">not completed</span>
+        <a class="button primary" href="{% url 'courses:lesson_detail' lesson.id %}?completion=complete#completion-modal">Mark Complete</a>
+      {% endif %}
+    </div>
+  </div>
+</section>

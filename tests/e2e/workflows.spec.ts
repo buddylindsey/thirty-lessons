@@ -1,9 +1,19 @@
 import { expect, test } from '@playwright/test';
 import { execFileSync } from 'node:child_process';
 
+function requireDbResetApproval() {
+  if (process.env.E2E_ALLOW_DB_RESET !== '1') {
+    throw new Error(
+      'Refusing to run e2e tests because they delete application data. ' +
+      'Set E2E_ALLOW_DB_RESET=1 only when pointed at a disposable test database.'
+    );
+  }
+}
+
 function manage(command: string) {
   if (process.env.E2E_DOCKER === '1') {
-    execFileSync('docker', ['compose', 'exec', '-T', 'web', 'python', 'manage.py', 'shell', '-c', command], {
+    const service = process.env.E2E_MANAGE_SERVICE || 'web';
+    execFileSync('docker', ['compose', '-f', 'docker-compose.yml', '-f', 'docker-compose.e2e.yml', 'exec', '-T', service, 'python', 'manage.py', 'shell', '-c', command], {
       env: process.env,
       stdio: 'inherit',
     });
@@ -16,8 +26,10 @@ function manage(command: string) {
 }
 
 test.beforeEach(() => {
+  requireDbResetApproval();
   manage(`
-from courses.models import Topic, Course, ChatMessage, Lesson, LessonFeedback, CourseMemory
+from courses.models import Topic, Course, ChatMessage, Lesson, LessonDiscussionMessage, LessonFeedback, CourseMemory
+LessonDiscussionMessage.objects.all().delete()
 LessonFeedback.objects.all().delete()
 Lesson.objects.all().delete()
 ChatMessage.objects.all().delete()
@@ -118,11 +130,30 @@ Lesson.objects.create(course=c,day_number=1,title='Marcus Aurelius',content_mark
 
   await expect(page.getByRole('heading', { name: 'Day 1: Marcus Aurelius' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Marcus Aurelius', exact: true })).toBeVisible();
+  await expect(page.getByTestId('lesson-completion-status')).toHaveText('not completed');
+  await page.getByRole('link', { name: 'Mark Complete' }).click();
+  await expect(page.getByRole('dialog', { name: 'Complete Lesson' })).toBeVisible();
+  await page.getByLabel('Optional reflection:').fill('I understood the core idea after the example.');
+  await page.getByRole('button', { name: 'Save Completion' }).click();
+  await expect(page.getByTestId('lesson-completion-status')).toHaveText('completed');
+  await expect(page.getByTestId('feedback-item').filter({ hasText: 'Completion note' })).toBeVisible();
+  await expect(page.getByText('I understood the core idea after the example.')).toBeVisible();
+  await page.getByRole('heading', { name: 'Discussion' }).scrollIntoViewIfNeeded();
+  await page.getByLabel('Message:').fill('Can you give me a simpler example?');
+  await page.getByRole('button', { name: 'Send' }).click();
+  await expect(
+    page.getByTestId('lesson-discussion-message')
+      .filter({ hasText: 'User' })
+      .filter({ hasText: 'Can you give me a simpler example?' })
+  ).toBeVisible();
+  await expect(page.getByText('A practical way to explore this')).toBeVisible();
+  await page.reload();
+  await expect(page.getByTestId('lesson-discussion-message')).toHaveCount(2);
   await page.getByRole('link', { name: 'More practical' }).click();
   await expect(page.getByRole('dialog', { name: 'Confirm Feedback' })).toBeVisible();
   await page.getByLabel('Optional comment:').fill('I need more hands-on examples.');
   await page.getByRole('button', { name: 'Save Feedback' }).click();
-  await expect(page.getByTestId('feedback-item')).toContainText('More practical');
+  await expect(page.getByTestId('feedback-item').filter({ hasText: 'More practical' })).toBeVisible();
   await expect(page.getByText('I need more hands-on examples.')).toBeVisible();
   await page.getByRole('button', { name: 'Save Note' }).click();
   await expect(page.getByText('Comment cannot be empty')).toBeVisible();

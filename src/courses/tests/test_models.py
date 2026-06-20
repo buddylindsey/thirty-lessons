@@ -2,7 +2,7 @@ from django.core.exceptions import ValidationError
 from django.test import TestCase
 
 from courses.models import Course, Topic
-from courses.tests.factories import course
+from courses.tests.factories import course, lesson
 
 
 class ModelTests(TestCase):
@@ -38,3 +38,16 @@ class ModelTests(TestCase):
 
         self.assertEqual(item.status, Course.ACTIVE)
         self.assertIsNotNone(item.started_at)
+
+    def test_lesson_completion_helpers_set_and_clear_completed_at(self):
+        generated = lesson()
+
+        generated.mark_complete()
+
+        self.assertTrue(generated.is_completed)
+        self.assertIsNotNone(generated.completed_at)
+
+        generated.mark_incomplete()
+
+        self.assertFalse(generated.is_completed)
+        self.assertIsNone(generated.completed_at)

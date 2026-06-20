@@ -2,10 +2,12 @@ from django.core import mail
 from django.test import TestCase, override_settings
 
 from courses.ai import AIProvider, set_ai_provider
-from courses.models import Course, CourseMemory, Lesson, LessonFeedback
+from courses.models import Course, CourseMemory, Lesson, LessonDiscussionMessage, LessonFeedback
 from courses.services import (
     GenerationError,
     build_daily_lesson_context,
+    build_lesson_discussion_context,
+    continue_lesson_discussion,
     generate_next_lesson,
     generate_outline,
     send_lesson_email,
@@ -33,6 +35,10 @@ class RecordingAI(AIProvider):
         self.contexts.append(context)
         return {"title": "Generated", "content_markdown": "# Generated", "summary": "Summary"}
 
+    def generate_lesson_discussion_response(self, context):
+        self.contexts.append(context)
+        return "Here is a smaller example."
+
     def update_course_memory(self, context):
         self.contexts.append(context)
         return "Remember more examples."
@@ -46,7 +52,7 @@ class FailingEmailBackend:
         raise RuntimeError("smtp unavailable")
 
 
-@override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
+@override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend", SITE_BASE_URL="http://localhost:8000")
 class ServiceTests(TestCase):
     def tearDown(self):
         from courses.ai import FakeAIProvider
@@ -86,6 +92,34 @@ class ServiceTests(TestCase):
         self.assertIn("More practical</a>", mail.outbox[0].alternatives[0][0])
         generated.refresh_from_db()
         self.assertIsNotNone(generated.email_sent_at)
+
+    def test_lesson_discussion_context_includes_lesson_feedback_memory_and_history(self):
+        item = course(status=Course.ACTIVE)
+        old = lesson(item, 1)
+        generated = lesson(item, 2)
+        LessonFeedback.objects.create(lesson=generated, feedback_type=LessonFeedback.CONFUSING, comment="Too abstract.")
+        CourseMemory.objects.create(course=item, content="Prefers concrete examples.")
+        LessonDiscussionMessage.objects.create(lesson=generated, role="user", content="Can you simplify this?")
+
+        context = build_lesson_discussion_context(generated)
+
+        self.assertEqual(context["lesson"]["title"], generated.title)
+        self.assertEqual(context["recent_lessons"][0]["title"], old.title)
+        self.assertEqual(context["lesson_feedback"][0]["comment"], "Too abstract.")
+        self.assertEqual(context["course_memory"], "Prefers concrete examples.")
+        self.assertEqual(context["discussion_history"][0]["content"], "Can you simplify this?")
+
+    def test_continue_lesson_discussion_saves_user_and_assistant_messages(self):
+        provider = RecordingAI()
+        set_ai_provider(provider)
+        generated = lesson()
+
+        response = continue_lesson_discussion(generated, "Can you give me an example?")
+
+        self.assertEqual(response.role, "assistant")
+        self.assertEqual(response.content, "Here is a smaller example.")
+        self.assertEqual(generated.discussion_messages.count(), 2)
+        self.assertEqual(provider.contexts[0]["discussion_history"][0]["content"], "Can you give me an example?")
 
     def test_generate_outline_rejects_malformed_outline(self):
         provider = RecordingAI()

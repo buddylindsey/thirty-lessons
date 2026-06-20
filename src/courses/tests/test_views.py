@@ -1,7 +1,7 @@
 from django.test import TestCase
 from django.urls import reverse
 
-from courses.models import ChatMessage, Course, Lesson, LessonFeedback, Topic
+from courses.models import ChatMessage, Course, Lesson, LessonDiscussionMessage, LessonFeedback, Topic
 from courses.tests.factories import course, lesson
 
 
@@ -83,6 +83,46 @@ class ViewTests(TestCase):
         self.assertContains(response, "<h1>Day 1: What a Piano Is, in Plain Language</h1>", html=True)
         self.assertNotContains(response, "Day 1: Day 1:")
 
+    def test_course_detail_highlights_completed_lessons(self):
+        item = course(status=Course.ACTIVE)
+        completed = lesson(course_item=item, day_number=1)
+        incomplete = lesson(course_item=item, day_number=2)
+        completed.mark_complete()
+        completed.save(update_fields=["completed_at", "updated_at"])
+
+        response = self.client.get(reverse("courses:course_detail", args=[item.id]))
+
+        self.assertContains(response, "lesson-card-completed", count=1)
+        self.assertContains(response, f"Day {completed.day_number}: {completed.title}")
+        self.assertContains(response, f"Day {incomplete.day_number}: {incomplete.title}")
+
+    def test_lesson_discussion_persists_user_and_assistant_messages(self):
+        generated = lesson()
+
+        response = self.client.post(
+            reverse("courses:lesson_discussion_submit", args=[generated.id]),
+            {"message": "Can you give me a simpler example?"},
+            HTTP_HX_REQUEST="true",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(LessonDiscussionMessage.objects.filter(lesson=generated).count(), 2)
+        self.assertContains(response, "Can you give me a simpler example?")
+        self.assertContains(response, "A practical way to explore this")
+
+    def test_lesson_discussion_rejects_empty_message(self):
+        generated = lesson()
+
+        response = self.client.post(
+            reverse("courses:lesson_discussion_submit", args=[generated.id]),
+            {"message": ""},
+            HTTP_HX_REQUEST="true",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "This field is required")
+        self.assertFalse(LessonDiscussionMessage.objects.filter(lesson=generated).exists())
+
     def test_quick_feedback_and_comment(self):
         generated = lesson()
 
@@ -117,6 +157,45 @@ class ViewTests(TestCase):
         )
         self.assertContains(response, "This was too abstract")
         self.assertEqual(generated.feedback.count(), 2)
+
+    def test_lesson_completion_modal_saves_state_and_optional_note(self):
+        generated = lesson()
+
+        response = self.client.get(reverse("courses:lesson_detail", args=[generated.id]), {"completion": "complete"})
+        self.assertContains(response, "Complete Lesson")
+        self.assertContains(response, "Optional reflection")
+        self.assertContains(response, "not completed")
+        self.assertFalse(generated.is_completed)
+
+        response = self.client.post(
+            reverse("courses:lesson_completion", args=[generated.id]),
+            {"action": "complete", "comment": "This clicked after the practice exercise."},
+            follow=True,
+        )
+
+        generated.refresh_from_db()
+        self.assertTrue(generated.is_completed)
+        self.assertContains(response, "completed")
+        self.assertContains(response, "Completion note")
+        self.assertContains(response, "This clicked after the practice exercise.")
+
+    def test_lesson_can_be_marked_incomplete_without_deleting_completion_notes(self):
+        generated = lesson()
+        self.client.post(
+            reverse("courses:lesson_completion", args=[generated.id]),
+            {"action": "complete", "comment": "Keep future lessons practical."},
+        )
+
+        response = self.client.post(
+            reverse("courses:lesson_completion", args=[generated.id]),
+            {"action": "incomplete"},
+            HTTP_HX_REQUEST="true",
+        )
+
+        generated.refresh_from_db()
+        self.assertFalse(generated.is_completed)
+        self.assertContains(response, "not completed")
+        self.assertEqual(generated.feedback.filter(feedback_type=LessonFeedback.COMPLETION_NOTE).count(), 1)
 
     def test_quick_feedback_is_idempotent_for_same_lesson_and_type(self):
         generated = lesson()
